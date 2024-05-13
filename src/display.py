@@ -1,10 +1,42 @@
 import streamlit as st
 import logging
-from .workflow import do_rag
+# from .workflow import do_rag
+from .retrieval import do_retrieval
+from .generation import SYSTEM_PROMPT, make_user_prompt
+from .setup_load import load_oai_model
+from .openai_code import do_1_oai_query_stream, set_messages, calc_n_tokens, calc_cost
+
 
 logger = logging.getLogger()
 
-def display_results(text_out: str, keep_texts: dict, cost_cents: float) -> None:
+# def display_results(text_out: str, keep_texts: dict, cost_cents: float) -> None:
+#     """Displays the chatbot response and optionally the retrieved sources and context.
+
+#     Args:
+#         text_out: The generated chatbot response.
+#         sources: A list of source URLs.
+#         context0: The retrieved context used for generation.
+#         display_sources: Whether to display sources and context (default: False).
+#     """
+
+#     st.header("Chatbot Response")
+#     st.markdown(text_out)
+
+#     st.caption(f'This cost approximately {cost_cents:.01f}¢')
+#     st.divider()
+#     st.subheader('RAG-identified relevant videos')
+#     n_vids = len(keep_texts)
+#     size1 = 100 / n_vids
+#     size2 = [size1] * n_vids
+#     vid_containers = st.columns(size2)
+#     for i, (vid_id, vid_info) in enumerate(keep_texts.items()):
+#         vid_container = vid_containers[i]
+#         with vid_container:
+#             st.markdown(f"**{vid_info['Title']}**\n\n*{vid_info['Speaker']}*\n\nYear: {vid_id[4:8]}")
+#             st.caption(f"Similarity Score: {100*vid_info['score']:.0f}/100")
+#             st.video(vid_info['VideoURL'])
+
+def display_context(keep_texts: dict) -> None:
     """Displays the chatbot response and optionally the retrieved sources and context.
 
     Args:
@@ -14,10 +46,10 @@ def display_results(text_out: str, keep_texts: dict, cost_cents: float) -> None:
         display_sources: Whether to display sources and context (default: False).
     """
 
-    st.header("Chatbot Response")
-    st.markdown(text_out)
+    # st.header("Chatbot Response")
+    # st.markdown(text_out)
 
-    st.caption(f'This cost approximately {cost_cents:.01f}¢')
+    # st.caption(f'This cost approximately {cost_cents:.01f}¢')
     st.divider()
     st.subheader('RAG-identified relevant videos')
     n_vids = len(keep_texts)
@@ -30,6 +62,7 @@ def display_results(text_out: str, keep_texts: dict, cost_cents: float) -> None:
             st.markdown(f"**{vid_info['Title']}**\n\n*{vid_info['Speaker']}*\n\nYear: {vid_id[4:8]}")
             st.caption(f"Similarity Score: {100*vid_info['score']:.0f}/100")
             st.video(vid_info['VideoURL'])
+
 
 def make_app(n_results: int) -> None:
     """Creates the core Streamlit application for the knowledge base QA system.
@@ -53,9 +86,13 @@ def make_app(n_results: int) -> None:
     st.title("Chat With a Decade of Previous NYR Talks")
 
     st.markdown("What question do you want to ask of previous speakers?")
+
+    placeholder1 = 'e.g. What is the tidyverse?'
+
+    # if query1 := st.chat_input(placeholder1,key='input1'):
     query1 = st.text_input(
         label='Question:',
-        placeholder='e.g. What is the tidyverse?',
+        placeholder=placeholder1,
         key='input1',
         type='default'
     )
@@ -70,13 +107,30 @@ def make_app(n_results: int) -> None:
             logger.error("You need to ask a question to get an answer")
             st.error("You need to ask a question to get an answer")
         else:
-            with st.spinner('''\
-        Please be patient. Our LLM is taking a while to get an answer'''):
-                try:
-                    text_out, keep_texts, cost_cents = do_rag(
-                        query0=query1, n_results=n_results
-                    )
-                except Exception as e:
-                    st.error(f"An error {e} occurred while processing your request.")  # User-friendly error
+            st.header("Chatbot Response")
+            with st.spinner('''Please be patient. Our LLM is taking a while to get an answer'''):
+            # try:   
+                logger.info(f"Received query: {query1}")
+                openai_client = load_oai_model()
+                keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, openai_client=openai_client)
+                out_container = st.container()
+                display_context(keep_texts)
+                with out_container:
+                    user_prompt = make_user_prompt(query1, keep_texts=keep_texts)
+                    messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)
+                    response = do_1_oai_query_stream(messages1, openai_client)
+                    text_out = st.write_stream(response)
+                    completion_tokens = calc_n_tokens(text_out)
+                    cost_cents_gen = calc_cost(prompt_tokens, completion_tokens)
+                    # st.write_stream(response)
+                    # cost_cents_gen = calc_cost(text_out[-1])
+                    cost_cents = cost_cents_ret + cost_cents_gen
+                    st.caption(f'This cost approximately {cost_cents:.01f}¢')
 
-                display_results(text_out, keep_texts, cost_cents)
+            # text_out, keep_texts, cost_cents = do_rag(
+            #     query0=query1, n_results=n_results
+            # )
+            # except Exception as e:
+            #     st.error(f"An error {e} occurred while processing your request.")  # User-friendly error
+
+            
