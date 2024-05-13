@@ -1,6 +1,5 @@
 import logging
-from .openai_code import do_1_oai_query
-from openai import OpenAI
+from .openai_code import do_1_oai_query_stream, set_messages, OpenAI
 
 logger = logging.getLogger()
 
@@ -30,25 +29,9 @@ After analyzing the above video transcripts, please provide a helpful answer to 
 Address the response to me directly.  Do not use any information not explicitly supported by the transcripts.'''
     return user_prompt
 
+def do_stream_generation(query1: str, keep_texts: dict, openai_client: OpenAI):
+    user_prompt = make_user_prompt(query1, keep_texts=keep_texts)
+    messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)
+    response = do_1_oai_query_stream(messages1, openai_client)
 
-# def do_generation(query0: str, keep_texts: dict, openai_client: OpenAI) -> str:
-#     """Generates a response to the query based on retrieved context.
-
-#     Args:
-#         query0: The user's query.
-#         context0: The retrieved context from the knowledge base.
-#         model: The name of the language generation model to use.
-
-#     Returns:
-#         str: The generated response.
-#     """
-
-#     user_prompt = make_user_prompt(query0, keep_texts)
-#     try:
-#         content_out, cost_cents = do_1_oai_query(SYSTEM_PROMPT, user_prompt, openai_client)
-#     except Exception as e:
-#         logger.error(f"Error {e} running user_prompt: {user_prompt}")
-#     logger.info('Generation finished')
-#     logger.info(f"cost: {cost_cents}")
-
-#     return content_out, cost_cents
+    return response, prompt_tokens

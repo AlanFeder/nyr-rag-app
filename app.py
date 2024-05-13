@@ -12,4 +12,8 @@ if __name__ == "__main__":
     n_results = 2
     
     # run app
-    make_app(n_results=n_results)
+    try:
+        make_app(n_results=n_results)
+    except Exception as e:
+        logger.error(e, stack_info=True)
+        raise

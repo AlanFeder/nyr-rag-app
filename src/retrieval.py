@@ -1,12 +1,11 @@
-from pyprojroot import here
+import logging
 import numpy as np
 import pandas as pd
+from openai import OpenAI
 
-import logging
 from .utils import dict_to_list_and_array
 from .openai_code import do_1_oai_embed
 from .setup_load import import_data
-from openai import OpenAI
 
 logger = logging.getLogger()
 

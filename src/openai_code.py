@@ -1,7 +1,7 @@
 import logging
-from openai import OpenAI
 import numpy as np
 import tiktoken
+from openai import OpenAI
 
 logger = logging.getLogger()
 
