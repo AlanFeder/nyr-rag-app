@@ -1,48 +1,26 @@
 import logging
-import requests
-import json
+from .openai_code import do_1_oai_query
+from openai import OpenAI
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
-def run_remote_llama(
-    llm_model_name: str, 
-    messages_list: list, 
-    ip_address: str = '3.88.116.167'#'18.214.91.237'
-) -> dict:
-    """Sends a chat request to a remote LLAMA server.
+def make_user_prompt(question, keep_texts):
+    user_prompt = f'''
+Question: {question}
+==============================
+'''
+    list_strs = []
+    for i, text0 in enumerate(keep_texts.values()):
+        list_strs.append(f'Video Transcript {i+1}\n{text0}')
+    user_prompt += '\n---\n'.join(list_strs)
+    user_prompt += '''
+==============================
+After analyzing the above video transcripts, please provide a helpful answer to my question. Remember to stay within two paragraphs
+Address the response to me directly.  Do not use any information not explicitly supported by the transcripts.'''
+    return user_prompt
 
-    Args:
-        llm_model_name: The name of the LLM (Large Language Model) to use on the remote server.
-        messages_list: A list of messages representing the chat history.
-        ip_address: The IP address of the remote server (default: '18.214.91.237').
 
-    Returns:
-        dict: The parsed response dictionary from the remote LLAMA server.
-    """
-
-    url = f"http://{ip_address}:11434/api/chat"  # Construct the API endpoint URL
-
-    input_data = {
-        'model': llm_model_name,
-        'messages': messages_list,
-        'stream': False,  # Get a complete response, not a stream
-        'options': {
-            "seed": 18,  # Set a seed for deterministic output
-            "temperature": 0  # Generate responses with low randomness
-        }
-    }
-
-    response = requests.post(url, json=input_data)  # Send the POST request
-    if response.status_code == 200:
-        logging.info("EC2 Ran Correctly, with a response")
-    else:
-        logging.error(f'API Ran with error code {response.status_code}')
-    response_text = response.text
-    result1 = json.loads(response_text)  # Parse the JSON response
-
-    return result1
-
-def do_generation(query0: str, context0: str, model: str) -> str:
+def do_generation(query0: str, keep_texts: dict, openai_client: OpenAI) -> str:
     """Generates a response to the query based on retrieved context.
 
     Args:
@@ -65,28 +43,12 @@ make up an answer - just say you don't know. If the context does not \
 include the answer, then say you don't know.  Be polite.\
 """
 
-    user_prompt = f'''QUERY: {query0}\n
-======\n
-CONTEXT: {context0}\n
-======\n
-Remember, if you do not know, do not make up an answer.
-The query was {query0}'''
-    messages = [{'role':'system', 'content':system_prompt},
-                {'role':'user','content':user_prompt}]
+    user_prompt = make_user_prompt(query0, keep_texts)
     try:
-        logger.info(f'start running {model} ')
-        result1 = run_remote_llama(llm_model_name=model, messages_list=messages)
+        content_out, cost_cents = do_1_oai_query(system_prompt, user_prompt, openai_client)
     except Exception as e:
-        logger.error(f"Error {e} running model {model}, user_prompt: {user_prompt}")
+        logger.error(f"Error {e} running user_prompt: {user_prompt}")
     logger.info('Generation finished')
-    logger.info(f"eval seconds: {round(result1['prompt_eval_duration']/1e9, 1)}")
-    logger.info(f"gen seconds: {round(result1['eval_duration']/1e9, 1)}")
-    logger.info(f"total seconds: {round(result1['total_duration']/1e9, 1)}")
-    logger.info(f"# tokens out: {result1['eval_count']}")
+    logger.info(f"cost: {cost_cents}")
 
-    out_text = result1['message']['content']
-
-    return out_text
-
-# if __name__ == '__main__':
-    # logger = logging.getLogger(__name__)
+    return content_out, cost_cents
