@@ -1,14 +1,22 @@
 import streamlit as st
 import logging
 from .retrieval import do_retrieval
-from .generation import do_stream_generation
-from .setup_load import load_oai_model
-from .openai_code import calc_n_tokens, calc_cost, OpenAI
+# from .generation import do_stream_generation
+from .generation import *
+from .setup_load import load_api_clients, OpenAI, Groq
+from .utils import calc_cost, calc_n_tokens
 
 logger = logging.getLogger()
 
-def do_and_display_generation(query1: str, keep_texts: dict, openai_client: OpenAI, cost_cents_ret: int) -> None:
-    response, prompt_tokens = do_stream_generation(query1, keep_texts, openai_client)
+def do_and_display_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq, cost_cents_ret: int) -> None:
+    # response, prompt_tokens = do_stream_generation(query1, keep_texts, gen_client)
+    user_prompt = make_user_prompt(query1, keep_texts=keep_texts)
+    messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)
+    st.write(messages1)
+    response = do_1_query_stream(messages1, gen_client)
+    # st.write(response)
+    # st.write(type(response))
+    # st.markdown(type(response))
     text_out = st.write_stream(response)
     completion_tokens = calc_n_tokens(text_out)
     cost_cents_gen = calc_cost(prompt_tokens, completion_tokens)
@@ -56,7 +64,7 @@ def make_app(n_results: int) -> None:
         menu_items=None
     )
 
-
+    use_oai = True
     st.title("Chat With a Decade of Previous NYR Talks")
 
     st.markdown("What question do you want to ask of previous speakers?")
@@ -83,9 +91,10 @@ def make_app(n_results: int) -> None:
             st.header("Chatbot Response")
             with st.spinner('''Please be patient. Our LLM is taking a while to get an answer'''):
                 logger.info(f"Received query: {query1}")
-                openai_client = load_oai_model()
-                keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, openai_client=openai_client)
+                ret_client, gen_client = load_api_clients(use_oai=use_oai)
+                # st.markdown(type(ret_client))
+                keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, api_client=ret_client)
                 out_container = st.container()
                 display_context(keep_texts)
                 with out_container:
-                    do_and_display_generation(query1, keep_texts, openai_client, cost_cents_ret)
+                    do_and_display_generation(query1, keep_texts, gen_client, cost_cents_ret)
