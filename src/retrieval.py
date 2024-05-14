@@ -1,26 +1,26 @@
 import logging
+from itertools import chain
 import numpy as np
 import pandas as pd
 
-from .utils import dict_to_list_and_array
+from .utils import dict_to_list_and_array, split_into_consecutive
 from .setup_load import import_data, OpenAI
 
 logger = logging.getLogger()
 
-def sort_docs(full_embeds_oai: dict, arr_q: np.ndarray) -> pd.DataFrame:
+def do_sort(embed_dict: dict, arr_q: np.ndarray) -> pd.DataFrame:
     """
     Sort documents based on their cosine similarity to the query embedding.
 
     Args:
-        full_embeds_oai (dict): Dictionary containing document embeddings.
+        full_embeds (dict): Dictionary containing document embeddings.
         arr_q (np.ndarray): Query embedding.
 
     Returns:
         pd.DataFrame: Sorted dataframe containing document IDs and similarity scores.
     """
     # Extract talk embeddings and convert to list and array
-    talk_embeds = full_embeds_oai['abstract']
-    video_ids, arr_embed = dict_to_list_and_array(talk_embeds)
+    video_ids, arr_embed = dict_to_list_and_array(embed_dict)
 
     # Calculate cosine similarities between query embedding and document embeddings
     cos_sims = np.dot(arr_embed, arr_q)
@@ -35,6 +35,40 @@ def sort_docs(full_embeds_oai: dict, arr_q: np.ndarray) -> pd.DataFrame:
     df_sorted = pd.DataFrame({'id0': top_vids, 'score': -np.sort(-cos_sims)})
 
     return df_sorted
+
+
+def sort_docs(full_embeds: dict, arr_q: np.ndarray) -> pd.DataFrame:
+    """
+    Sort documents based on their cosine similarity to the query embedding.
+
+    Args:
+        full_embeds (dict): Dictionary containing document embeddings.
+        arr_q (np.ndarray): Query embedding.
+
+    Returns:
+        pd.DataFrame: Sorted dataframe containing document IDs and similarity scores.
+    """
+    # Extract talk embeddings and convert to list and array
+    abstract_embeds = full_embeds['abstract']
+
+    return do_sort(abstract_embeds, arr_q)
+
+def sort_within_doc(full_embeds: dict, arr_q: np.ndarray, video_id: str) -> pd.DataFrame:
+    """
+    Sort documents based on their cosine similarity to the query embedding.
+
+    Args:
+        full_embeds (dict): Dictionary containing document embeddings.
+        arr_q (np.ndarray): Query embedding.
+
+    Returns:
+        pd.DataFrame: Sorted dataframe containing document IDs and similarity scores.
+    """
+    # Extract talk embeddings and convert to list and array
+    seg_embeds = full_embeds['seg']
+    these_seg_embeds = seg_embeds[video_id]
+
+    return do_sort(these_seg_embeds, arr_q)
 
 def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, transcript_dicts: dict) -> dict:
     """
@@ -123,13 +157,40 @@ def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict: #tupl
         
         # Limit the retrieved documents based on a score threshold
         keep_texts = limit_docs(df_sorted, df_talks, n_results, transcript_dicts)
+        n_vids = len(keep_texts)
+        n_chunks_per_vid = 50 // n_vids
         
+        for video_id in keep_texts:
+            df_sorted_chunks = sort_within_doc(full_embeds, arr_q, video_id)
+            tx_chunk_info = transcripts_40seconds[video_id]
+            tx_segs_info = transcript_dicts[video_id]['segments']
+            df_chunk_info = pd.DataFrame(tx_chunk_info).T.reset_index().rename({'index':'id0'}, axis=1)
+            df_sorted_chunks = df_sorted_chunks.merge(df_chunk_info)
+            df_keep_chunks = df_sorted_chunks.iloc[:n_chunks_per_vid].copy()
+            top_chunk_start = df_keep_chunks.iloc[0]['segment_start']
+            segment_ids = df_keep_chunks['segment_ids']
+            unique_seg_ids = set(chain.from_iterable(segment_ids))
+            seg_id_grps = split_into_consecutive(np.array(list(unique_seg_ids)))
+            text_grps_list = []
+            for seg_id_grp in seg_id_grps:
+                text_seg_list = []
+                for seg_id in seg_id_grp:
+                    text_seg_list.append(tx_segs_info[seg_id]['segment_text'])
+                text_seg = ' '.join(text_seg_list)
+                text_grps_list.append(text_seg)
+            relevant_text = '\n...\n'.join(text_grps_list)
+            keep_texts[video_id]['best_video_start'] = top_chunk_start
+            keep_texts[video_id]['relevant_text'] = relevant_text
+
+
+            
+
         # # Calculate the cost in cents
         # cost_cents = 2 * n_emb_toks / 10_000
     except Exception as e:
         logger.error(f"Error during document retrieval for query: {query0}, Error: {str(e)}")
         raise
 
-    return keep_texts#, cost_cents
+    return keep_texts
 
 # def retrieve_chunks

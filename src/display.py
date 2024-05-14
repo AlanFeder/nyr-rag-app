@@ -51,9 +51,14 @@ def display_context(keep_texts: dict) -> None:
     for i, (vid_id, vid_info) in enumerate(keep_texts.items()):
         vid_container = vid_containers[i]
         with vid_container:
-            st.markdown(f"**{vid_info['Title']}**\n\n*{vid_info['Speaker']}*\n\nYear: {vid_id[4:8]}")
-            st.caption(f"Similarity Score: {100*vid_info['score']:.0f}/100")
-            st.video(vid_info['VideoURL'])
+            vid_title = vid_info['Title']
+            vid_speaker = vid_info['Speaker']
+            sim_score = 100 * vid_info['score']
+            vid_url = vid_info['VideoURL']
+            vid_start = int(vid_info['best_video_start'])
+            st.markdown(f"**{vid_title}**\n\n*{vid_speaker}*\n\nYear: {vid_id[4:8]}")
+            st.caption(f"Similarity Score: {sim_score:.0f}/100")
+            st.video(vid_url, start_time=vid_start)
 
 def make_app(n_results: int) -> None:
     """

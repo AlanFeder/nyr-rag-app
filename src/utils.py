@@ -53,3 +53,28 @@ def calc_cost(prompt_tokens: int, completion_tokens: int, embedding_tokens: int)
     cost_cents += embedding_tokens / 500000
 
     return cost_cents
+
+def split_into_consecutive(arr):
+    """ I got the following function from the following GPT prompt
+    > I have a numpy array of numbers.  some are consecutive, some are not (e.g. 3, 4, 5, 6, 10, 11, 12, 13, 19, 20, 21).  How can I split it into a list of arrays, where each sub-element is just the consecutive parts (e.g. [[3,4,5,6],[10,11,12,13],[19,20,21]])?
+
+    The goal is so that if there are consecutive minutes, and I look at the before-and-after, they are combined as needed
+    """
+    # List to store the result
+    result = []
+    # Temporary list to store current sequence
+    temp = [arr[0]]
+
+    for i in range(1, len(arr)):
+        if arr[i] == arr[i - 1] + 1:
+            # Continue the current sequence
+            temp.append(arr[i])
+        else:
+            # Start a new sequence
+            result.append(np.array(temp))
+            temp = [arr[i]]
+
+    # Append the last sequence
+    result.append(np.array(temp))
+
+    return result
