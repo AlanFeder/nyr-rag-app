@@ -9,7 +9,7 @@ if __name__ == "__main__":
     logger = logging.getLogger()
 
     # Initialize variables and models
-    n_results = 2
+    n_results = 3
     
     # run app
     try:

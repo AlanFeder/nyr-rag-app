@@ -19,13 +19,14 @@ def set_messages(system_prompt: str, user_prompt: str) -> dict:
 
 SYSTEM_PROMPT = '''
 You are an AI assistant that helps answer questions by searching through video transcripts. 
-I have retrieved the two transcripts most likely to answer the user's question.
+I have retrieved the transcripts most likely to answer the user's question.
 Carefully read through the transcripts to find information that helps answer the question. 
 Be brief - your response should not be more than two paragraphs.
 Only use information directly stated in the provided transcripts to answer the question. 
 Do not add any information or make any claims that are not explicitly supported by the transcripts.
 If the transcripts do not contain enough information to answer the question, state that you do not have enough information to provide a complete answer.
 Format the response clearly.  If only one of the transcripts answers the question, don't reference the other and don't explain why its content is irrelevant.
+Do not speak in the first person. DO NOT write a letter, make an introduction, or salutation
 '''
 
 def make_user_prompt(question, keep_texts):
@@ -36,7 +37,8 @@ Question: {question}
     list_strs = []
     for i, tx_val in enumerate(keep_texts.values()):
         text0 = tx_val['text']
-        list_strs.append(f'Video Transcript {i+1}\n{text0}')
+        speaker_name = tx_val['Speaker']
+        list_strs.append(f'Video Transcript {i+1}\nSpeaker: {speaker_name}\n{text0}')
     user_prompt += '\n---\n'.join(list_strs)
     user_prompt += '''
 ==============================
@@ -48,8 +50,8 @@ def do_1_query_stream(messages1: dict, gen_client: OpenAI | Groq) -> tuple[str, 
 
     if isinstance(gen_client, OpenAI):
         # model1 = 'gpt-4-turbo'
-        # model1 = 'gpt-4o'
-        model1 = 'gpt-3.5-turbo'
+        model1 = 'gpt-4o'
+        # model1 = 'gpt-3.5-turbo'
     elif isinstance(gen_client, Groq):
         model1 = 'llama3-8b-8192'
     else:
@@ -64,11 +66,3 @@ def do_1_query_stream(messages1: dict, gen_client: OpenAI | Groq) -> tuple[str, 
     )
 
     return response1
-
-
-# def do_stream_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq):
-#     # user_prompt = make_user_prompt(query1, keep_texts=keep_texts)
-#     # messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)
-#     # response = do_1_query_stream(messages1, gen_client)
-
-#     return response, prompt_tokens
