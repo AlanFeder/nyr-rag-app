@@ -26,7 +26,8 @@ Only use information directly stated in the provided transcripts to answer the q
 Do not add any information or make any claims that are not explicitly supported by the transcripts.
 If the transcripts do not contain enough information to answer the question, state that you do not have enough information to provide a complete answer.
 Format the response clearly.  If only one of the transcripts answers the question, don't reference the other and don't explain why its content is irrelevant.
-Do not speak in the first person. DO NOT write a letter, make an introduction, or salutation
+Do not speak in the first person. DO NOT write a letter, make an introduction, or salutation.
+Reference the speaker's name when you say what they said.
 '''
 
 def make_user_prompt(question, keep_texts):

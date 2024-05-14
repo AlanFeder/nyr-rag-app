@@ -19,6 +19,9 @@ def sort_docs(full_embeds_oai: dict, arr_q: np.ndarray):
 def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, transcript_dicts: dict):
     df_sorted = df_sorted.merge(df_talks)
     df_top = df_sorted.iloc[:n_results].copy()
+    top_score = df_top['score'].iloc[0]
+    score_thresh = min(0.6, top_score - 0.05)
+    df_top = df_top.loc[df_top['score']> score_thresh]
     keep_texts = df_top.set_index('id0').to_dict(orient='index')
     for id0 in keep_texts:
         keep_texts[id0]['text'] = transcript_dicts[id0]['text']

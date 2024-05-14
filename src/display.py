@@ -88,11 +88,11 @@ def make_app(n_results: int) -> None:
             st.error("You need to ask a question to get an answer")
         else:
             st.header("Chatbot Response")
-            with st.spinner('''Please be patient. Our LLM is taking a while to get an answer'''):
-                logger.info(f"Received query: {query1}")
-                ret_client, gen_client = load_api_clients(use_oai=use_oai)
-                keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, api_client=ret_client)
-                out_container = st.container()
-                display_context(keep_texts)
-                with out_container:
-                    do_and_display_generation(query1, keep_texts, gen_client, cost_cents_ret)
+            # with st.spinner('''Please be patient. Our LLM is taking a while to get an answer'''):
+            logger.info(f"Received query: {query1}")
+            ret_client, gen_client = load_api_clients(use_oai=use_oai)
+            keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, api_client=ret_client)
+            out_container = st.container()
+            display_context(keep_texts)
+            with out_container:
+                do_and_display_generation(query1, keep_texts, gen_client, cost_cents_ret)
