@@ -1,5 +1,5 @@
 import logging
-from collections import defaultdict
+import tiktoken
 import numpy as np
 
 logger = logging.getLogger()
@@ -21,3 +21,14 @@ def dict_to_list_and_array(data: dict[str, np.ndarray]) -> tuple[list[str], np.n
     values = np.array(list(data.values()))
     
     return keys, values
+
+def calc_n_tokens(text_in: str) -> int:
+    tok_model = tiktoken.get_encoding('o200k_base')
+    token_ids = tok_model.encode(text=text_in)
+    return len(token_ids)
+
+def calc_cost(prompt_tokens: int, completion_tokens: int) -> int:
+
+    cost_cents = (prompt_tokens + (3 * completion_tokens)) / 2000
+
+    return cost_cents
