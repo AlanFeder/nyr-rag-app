@@ -62,7 +62,7 @@ Question: {question}
     user_prompt += '''
 ==============================
 After analyzing the above video transcripts, please provide a helpful answer to my question. Remember to stay within two paragraphs
-Address the response to me directly.  Do not use any information not explicitly supported by the transcripts.'''
+Address the response to me directly.  Do not use any information not explicitly supported by the transcripts. Remember to reference the speaker's name.'''
     return user_prompt
 
 def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> tuple[str, float]:
