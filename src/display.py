@@ -21,17 +21,13 @@ def display_stream_generation(stream_response: Stream) -> int:
     completion_tokens = calc_n_tokens(text_out)
     return completion_tokens
 
-def display_cost(prompt_tokens: int, completion_tokens: int, cost_cents_ret: float) -> None:
+def display_cost(cost_cents: float) -> None:
     """
     Display the cost of the retrieval and generation.
 
     Args:
-        prompt_tokens (int): The number of prompt tokens.
-        completion_tokens (int): The number of completion tokens.
-        cost_cents_ret (float): The cost in cents for the retrieval phase.
+        cost_cents(float): The cost in cents
     """
-    cost_cents_gen = calc_cost(prompt_tokens, completion_tokens)
-    cost_cents = cost_cents_ret + cost_cents_gen
     st.caption(f'This cost approximately {cost_cents:.01f}¢')
 
 def display_context(keep_texts: dict) -> None:
@@ -44,9 +40,15 @@ def display_context(keep_texts: dict) -> None:
     st.divider()
     st.subheader('RAG-identified relevant videos')
     n_vids = len(keep_texts)
-    size1 = 100 / n_vids
-    size2 = [size1] * n_vids
-    vid_containers = st.columns(size2)
+    size1 = min(1 / n_vids, 1 / 3)
+    if n_vids == 1:
+        _, vid_c1, _ = st.columns(3)
+        vid_containers = [vid_c1]
+    elif n_vids == 2:
+        _, vid_c1, vid_c2, _ = st.columns([size1 / 2, size1, size1, size1 / 2])
+        vid_containers = [vid_c1, vid_c2]
+    else:
+        vid_containers = st.columns([size1] * n_vids)
     for i, (vid_id, vid_info) in enumerate(keep_texts.items()):
         vid_container = vid_containers[i]
         with vid_container:
@@ -77,31 +79,20 @@ def make_app(n_results: int) -> None:
     st.markdown("What question do you want to ask of previous speakers?")
 
     placeholder1 = 'e.g. What is the tidyverse?'
+    chat_container = st.container()
+    videos_container = st.container()
 
-    query1 = st.text_input(
-        label='Question:',
-        placeholder=placeholder1,
-        key='input1',
-        type='default'
-    )
-
-    run_rag = st.button(
-        label = 'Ask my question',
-        key='button1',
-    )
-
-    if run_rag:
-        if len(query1) < 2:
-            logger.error("You need to ask a question to get an answer")
-            st.error("You need to ask a question to get an answer")
-        else:
-            st.header("Chatbot Response")
-            logger.info(f"Received query: {query1}")
+    with chat_container:
+        if prompt1 := st.chat_input(placeholder=placeholder1, key='input1'):
+            with st.chat_message("user"):
+                st.markdown(prompt1)
             ret_client, gen_client = load_api_clients()
-            keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, api_client=ret_client)
-            out_container = st.container()
-            display_context(keep_texts)
-            stream_response, prompt_tokens = do_stream_generation(query1, keep_texts, gen_client)
-            with out_container:
+            keep_texts = do_retrieval(query0=prompt1, n_results=n_results, api_client=ret_client)
+            with videos_container:
+                display_context(keep_texts)
+            stream_response, prompt_tokens = do_stream_generation(prompt1, keep_texts, gen_client)
+            with st.chat_message("assistant"):
                 completion_tokens = display_stream_generation(stream_response)
-                display_cost(prompt_tokens, completion_tokens, cost_cents_ret)
+                embedding_tokens = calc_n_tokens(prompt1)
+                cost_cents = calc_cost(prompt_tokens, completion_tokens, embedding_tokens)
+                display_cost(cost_cents)
