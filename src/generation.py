@@ -77,7 +77,6 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> tu
         tuple[str, float]: A tuple containing the generated response and the cost in cents.
     """
     if isinstance(gen_client, OpenAI):
-        # model1 = 'gpt-4-turbo'
         model1 = 'gpt-4o'
         # model1 = 'gpt-3.5-turbo'
     else:

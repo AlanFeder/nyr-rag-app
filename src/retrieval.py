@@ -69,7 +69,7 @@ def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, 
 
     return keep_texts
 
-def do_1_embed(lt: str, emb_client: OpenAI) -> tuple[np.ndarray, int]:
+def do_1_embed(lt: str, emb_client: OpenAI) -> np.ndarray:# tuple[np.ndarray, int]:
     """
     Generate embeddings using the OpenAI API for a single text.
 
@@ -78,7 +78,8 @@ def do_1_embed(lt: str, emb_client: OpenAI) -> tuple[np.ndarray, int]:
         emb_client (OpenAI ): The embedding API client (OpenAI ).
 
     Returns:
-        tuple[np.ndarray, int]: A tuple containing the generated embeddings and the total number of tokens.
+        np.ndarray: the generated embeddings
+        # tuple[np.ndarray, int]: A tuple containing the generated embeddings and the total number of tokens.
     """
     if isinstance(emb_client, OpenAI):
         # Generate embeddings using OpenAI API
@@ -87,15 +88,15 @@ def do_1_embed(lt: str, emb_client: OpenAI) -> tuple[np.ndarray, int]:
             model='text-embedding-3-small',
         )
         here_embed = np.array(embed_response.data[0].embedding)
-        n_toks = embed_response.usage.total_tokens
+        # n_toks = embed_response.usage.total_tokens
     else:
         logger.error("There is some problem with the embedding client")
         raise Exception("There is some problem with the embedding client")
     
     logger.info(f'Embedded {lt}')
-    return here_embed, n_toks
+    return here_embed#, n_toks
 
-def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> tuple[dict, float]:
+def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict: #tuple[dict, float]:
     """
     Retrieve relevant documents based on the user's query.
 
@@ -105,26 +106,30 @@ def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> tuple[dict,
         api_client (OpenAI): The API client (OpenAI ) for generating embeddings.
 
     Returns:
-        tuple[dict, float]: A tuple containing the retrieved documents and the cost in cents.
+        dict: the retrieved documents
+        # tuple[dict, float]: A tuple containing the retrieved documents and the cost in cents.
     """
     logger.info(f"Starting document retrieval for query: {query0}")
     try:
         # Import data
-        df_talks, transcript_dicts, full_embeds_oai = import_data()
+        df_talks, transcript_dicts, transcripts_40seconds, full_embeds = import_data()
         
         # Generate embeddings for the query
-        arr_q, n_emb_toks = do_1_embed(query0, api_client)
+        # arr_q, n_emb_toks = do_1_embed(query0, api_client)
+        arr_q = do_1_embed(query0, api_client)
         
         # Sort documents based on their cosine similarity to the query embedding
-        df_sorted = sort_docs(full_embeds_oai, arr_q)
+        df_sorted = sort_docs(full_embeds, arr_q)
         
         # Limit the retrieved documents based on a score threshold
         keep_texts = limit_docs(df_sorted, df_talks, n_results, transcript_dicts)
         
-        # Calculate the cost in cents
-        cost_cents = 2 * n_emb_toks / 10_000
+        # # Calculate the cost in cents
+        # cost_cents = 2 * n_emb_toks / 10_000
     except Exception as e:
         logger.error(f"Error during document retrieval for query: {query0}, Error: {str(e)}")
         raise
 
-    return keep_texts, cost_cents
+    return keep_texts#, cost_cents
+
+# def retrieve_chunks

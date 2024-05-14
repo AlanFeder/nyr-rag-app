@@ -53,9 +53,11 @@ def import_data() -> tuple[pd.DataFrame, dict, dict]:
     df_talks = pd.read_parquet(fp_data / 'talks_on_youtube.parquet')
     with open(fp_data / 'transcripts.pkl', 'rb') as f1:
         transcript_dicts = pickle.load(f1)
-    with open(fp_data / 'full_embeds_oai.pkl', 'rb') as f2:
-        full_embeds_oai = pickle.load(f2)
+    with open(fp_data / 'transcripts_40seconds.pkl', 'rb') as f1:
+        transcripts_40seconds = pickle.load(f1) 
+    with open(fp_data / 'full_embeds.pkl', 'rb') as f2:
+        full_embeds = pickle.load(f2)
 
     logging.info('Loaded files')
 
-    return df_talks, transcript_dicts, full_embeds_oai
+    return df_talks, transcript_dicts, transcripts_40seconds, full_embeds

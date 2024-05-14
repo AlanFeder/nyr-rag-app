@@ -36,17 +36,20 @@ def calc_n_tokens(text_in: str) -> int:
     token_ids = tok_model.encode(text=text_in)
     return len(token_ids)
 
-def calc_cost(prompt_tokens: int, completion_tokens: int) -> float:
+def calc_cost(prompt_tokens: int, completion_tokens: int, embedding_tokens: int) -> float:
     """
     Calculate the cost in cents based on the number of prompt and completion tokens.
 
     Args:
         prompt_tokens (int): The number of tokens in the prompt.
         completion_tokens (int): The number of tokens in the completion.
+        embedding_tokens (int): The number of tokens in the embedding.
 
     Returns:
         float: The cost in cents.
     """
-    cost_cents = (prompt_tokens + (3 * completion_tokens)) / 2000
+    cost_cents = prompt_tokens / 2000
+    cost_cents += 3 * completion_tokens / 2000
+    cost_cents += embedding_tokens / 500000
 
     return cost_cents
