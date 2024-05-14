@@ -97,7 +97,7 @@ def make_app(n_results: int) -> None:
         else:
             st.header("Chatbot Response")
             logger.info(f"Received query: {query1}")
-            ret_client, gen_client = load_api_clients(use_oai=use_oai)
+            ret_client, gen_client = load_api_clients()
             keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, api_client=ret_client)
             out_container = st.container()
             display_context(keep_texts)
