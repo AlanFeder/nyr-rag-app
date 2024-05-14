@@ -6,8 +6,6 @@ import os
 from openai import OpenAI
 import pandas as pd
 import pickle
-from groq import Groq
-from cohere import Client as Cohere
 
 logger = logging.getLogger()
 
@@ -30,62 +28,17 @@ def load_oai_model() -> OpenAI:
 
     return openai_client
 
-@st.cache_resource(ttl=7200)
-def load_groq() -> Groq:
+
+def load_api_clients() -> tuple[OpenAI, OpenAI]:
     """
-    Load Groq API client.
+    Load API clients.
+
 
     Returns:
-        Groq: The Groq API client.
+        tuple[OpenAI, OpenAI ]: A tuple containing the retrieval client and generation client.
     """
-    # Load API key from environment variable
-    load_dotenv()
-    api_key = os.getenv("GROQ_API_KEY")
-
-    # Create Groq API client
-    groq_client = Groq(api_key=api_key)
-
-    logger.info("Groq Client set up")
-
-    return groq_client
-
-@st.cache_resource(ttl=7200)
-def load_cohere() -> Cohere:
-    """
-    Load Cohere API client.
-
-    Returns:
-        Cohere: The Cohere API client.
-    """
-    # Load API key from environment variable
-    load_dotenv()
-    api_key = os.getenv("CO_API_KEY")
-
-    # Create Cohere API client
-    cohere_client = Cohere(api_key)
-
-    logger.info("Cohere Client set up")
-
-    return cohere_client
-
-def load_api_clients(use_oai: bool = False) -> tuple[OpenAI | Cohere, OpenAI | Groq]:
-    """
-    Load API clients based on the use_oai flag.
-
-    Args:
-        use_oai (bool): Flag to determine whether to use OpenAI or alternate clients.
-
-    Returns:
-        tuple[OpenAI | Cohere, OpenAI | Groq]: A tuple containing the retrieval client and generation client.
-    """
-    if use_oai:
-        openai_client = load_oai_model()
-        ret_client = gen_client = openai_client
-    else:
-        # ret_client = load_cohere()
-        ret_client = load_oai_model()
-        gen_client = load_groq()
-    
+    openai_client = load_oai_model()
+    ret_client = gen_client = openai_client
     return ret_client, gen_client
 
 @st.cache_data(ttl=7200)

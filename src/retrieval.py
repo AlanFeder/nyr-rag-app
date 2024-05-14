@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from .utils import dict_to_list_and_array
-from .setup_load import import_data, OpenAI, Cohere
+from .setup_load import import_data, OpenAI
 
 logger = logging.getLogger()
 
@@ -69,13 +69,13 @@ def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, 
 
     return keep_texts
 
-def do_1_embed(lt: str, emb_client: OpenAI | Cohere) -> tuple[np.ndarray, int]:
+def do_1_embed(lt: str, emb_client: OpenAI) -> tuple[np.ndarray, int]:
     """
-    Generate embeddings using the OpenAI or Cohere API for a single text.
+    Generate embeddings using the OpenAI API for a single text.
 
     Args:
         lt (str): A text to generate embeddings for.
-        emb_client (OpenAI | Cohere): The embedding API client (OpenAI or Cohere).
+        emb_client (OpenAI ): The embedding API client (OpenAI ).
 
     Returns:
         tuple[np.ndarray, int]: A tuple containing the generated embeddings and the total number of tokens.
@@ -88,15 +88,6 @@ def do_1_embed(lt: str, emb_client: OpenAI | Cohere) -> tuple[np.ndarray, int]:
         )
         here_embed = np.array(embed_response.data[0].embedding)
         n_toks = embed_response.usage.total_tokens
-    elif isinstance(emb_client, Cohere):
-        # Generate embeddings using Cohere API
-        co_response = emb_client.embed(
-            texts=lt,
-            model="embed-english-v3.0",
-            input_type="search_document"
-        )
-        here_embed = np.array(co_response.embeddings).flatten()
-        n_toks = co_response.meta.billed_units.input_tokens
     else:
         logger.error("There is some problem with the embedding client")
         raise Exception("There is some problem with the embedding client")
@@ -104,14 +95,14 @@ def do_1_embed(lt: str, emb_client: OpenAI | Cohere) -> tuple[np.ndarray, int]:
     logger.info(f'Embedded {lt}')
     return here_embed, n_toks
 
-def do_retrieval(query0: str, n_results: int, api_client: OpenAI | Cohere) -> tuple[dict, float]:
+def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> tuple[dict, float]:
     """
     Retrieve relevant documents based on the user's query.
 
     Args:
         query0 (str): The user's query.
         n_results (int): The number of documents to retrieve.
-        api_client (OpenAI | Cohere): The API client (OpenAI or Cohere) for generating embeddings.
+        api_client (OpenAI): The API client (OpenAI ) for generating embeddings.
 
     Returns:
         tuple[dict, float]: A tuple containing the retrieved documents and the cost in cents.

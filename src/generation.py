@@ -1,7 +1,6 @@
 import logging
-from .setup_load import OpenAI, Groq
-from openai import Stream as oai_Stream
-from groq import Stream as groq_Stream
+from .setup_load import OpenAI
+from openai import Stream
 from .utils import calc_n_tokens
 
 logger = logging.getLogger()
@@ -66,13 +65,13 @@ After analyzing the above video transcripts, please provide a helpful answer to 
 Address the response to me directly.  Do not use any information not explicitly supported by the transcripts.'''
     return user_prompt
 
-def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> tuple[str, float]:
+def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> tuple[str, float]:
     """
     Generate a response using the specified chat completion model.
 
     Args:
         messages1 (list[dict[str, str]]): The messages for the chat completion.
-        gen_client (OpenAI | Groq): The generation client (OpenAI or Groq).
+        gen_client (OpenAI ): The generation client (OpenAI).
 
     Returns:
         tuple[str, float]: A tuple containing the generated response and the cost in cents.
@@ -81,8 +80,6 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq
         # model1 = 'gpt-4-turbo'
         model1 = 'gpt-4o'
         # model1 = 'gpt-3.5-turbo'
-    elif isinstance(gen_client, Groq):
-        model1 = 'llama3-8b-8192'
     else:
         logger.error("There is some problem with the generator client")
         raise Exception("There is some problem with the generator client")
@@ -98,14 +95,14 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq
 
     return response1
 
-def do_stream_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq) -> tuple[oai_Stream | groq_Stream, int]:
+def do_stream_generation(query1: str, keep_texts: dict, gen_client: OpenAI) -> tuple[Stream, int]:
     """
     Generate the chatbot response using the specified generation client.
 
     Args:
         query1 (str): The user's query.
         keep_texts (dict): The retrieved relevant texts.
-        gen_client (OpenAI | Groq): The generation client (OpenAI or Groq).
+        gen_client (OpenAI: The generation client (OpenAI).
 
     Returns:
         tuple[Stream, int]: A tuple containing the generated response and the number of prompt tokens.

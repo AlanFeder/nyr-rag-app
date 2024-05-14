@@ -1,13 +1,13 @@
 import streamlit as st
 import logging
 from .retrieval import do_retrieval
-from .generation import do_stream_generation, oai_Stream, groq_Stream
+from .generation import do_stream_generation, Stream
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
 
 logger = logging.getLogger()
 
-def display_stream_generation(stream_response: oai_Stream | groq_Stream) -> int:
+def display_stream_generation(stream_response: Stream) -> int:
     """
     Display the chatbot response.
 
