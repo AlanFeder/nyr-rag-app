@@ -1,35 +1,45 @@
 import streamlit as st
 import logging
 from .retrieval import do_retrieval
-# from .generation import do_stream_generation
-from .generation import *
-from .setup_load import load_api_clients, OpenAI, Groq
+from .generation import do_stream_generation, oai_Stream, groq_Stream
+from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
 
 logger = logging.getLogger()
 
-def do_and_display_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq, cost_cents_ret: int) -> None:
-    user_prompt = make_user_prompt(query1, keep_texts=keep_texts)
-    messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)
-    # st.write(messages1)
-    response = do_1_query_stream(messages1, gen_client)
-    # st.write(response)
-    # st.write(type(response))
-    # st.markdown(type(response))
-    text_out = st.write_stream(response)
+def display_stream_generation(stream_response: oai_Stream | groq_Stream) -> int:
+    """
+    Display the chatbot response.
+
+    Args:
+        stream_response (Stream): The Stream generator object.
+
+    Returns:
+        int: The number of completion tokens.
+    """
+    text_out = st.write_stream(stream_response)
     completion_tokens = calc_n_tokens(text_out)
+    return completion_tokens
+
+def display_cost(prompt_tokens: int, completion_tokens: int, cost_cents_ret: float) -> None:
+    """
+    Display the cost of the retrieval and generation.
+
+    Args:
+        prompt_tokens (int): The number of prompt tokens.
+        completion_tokens (int): The number of completion tokens.
+        cost_cents_ret (float): The cost in cents for the retrieval phase.
+    """
     cost_cents_gen = calc_cost(prompt_tokens, completion_tokens)
     cost_cents = cost_cents_ret + cost_cents_gen
     st.caption(f'This cost approximately {cost_cents:.01f}¢')
 
 def display_context(keep_texts: dict) -> None:
-    """Displays the chatbot response and optionally the retrieved sources and context.
+    """
+    Display the RAG-identified relevant videos.
 
     Args:
-        text_out: The generated chatbot response.
-        sources: A list of source URLs.
-        context0: The retrieved context used for generation.
-        display_sources: Whether to display sources and context (default: False).
+        keep_texts (dict): The retrieved relevant texts.
     """
     st.divider()
     st.subheader('RAG-identified relevant videos')
@@ -44,14 +54,12 @@ def display_context(keep_texts: dict) -> None:
             st.caption(f"Similarity Score: {100*vid_info['score']:.0f}/100")
             st.video(vid_info['VideoURL'])
 
-
 def make_app(n_results: int) -> None:
-    """Creates the core Streamlit application for the knowledge base QA system.
+    """
+    Create the core Streamlit application for the knowledge base QA system.
 
     Args:
-        n_results: The number of documents to retrieve.
-        display_sources: Whether to display retrieved sources and context 
-                         (default: False).
+        n_results (int): The number of documents to retrieve.
     """
     logger.info("Start building streamlit app")
     # Configure Streamlit page settings
@@ -83,16 +91,17 @@ def make_app(n_results: int) -> None:
     )
 
     if run_rag:
-        if len(query1)<2:
+        if len(query1) < 2:
             logger.error("You need to ask a question to get an answer")
             st.error("You need to ask a question to get an answer")
         else:
             st.header("Chatbot Response")
-            # with st.spinner('''Please be patient. Our LLM is taking a while to get an answer'''):
             logger.info(f"Received query: {query1}")
             ret_client, gen_client = load_api_clients(use_oai=use_oai)
             keep_texts, cost_cents_ret = do_retrieval(query0=query1, n_results=n_results, api_client=ret_client)
             out_container = st.container()
             display_context(keep_texts)
+            stream_response, prompt_tokens = do_stream_generation(query1, keep_texts, gen_client)
             with out_container:
-                do_and_display_generation(query1, keep_texts, gen_client, cost_cents_ret)
+                completion_tokens = display_stream_generation(stream_response)
+                display_cost(prompt_tokens, completion_tokens, cost_cents_ret)
