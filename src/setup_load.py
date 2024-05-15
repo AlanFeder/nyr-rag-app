@@ -10,7 +10,7 @@ import pickle
 logger = logging.getLogger()
 
 @st.cache_resource(ttl=7200)
-def load_oai_model() -> OpenAI:
+def load_oai_model(api_key: str = None) -> OpenAI:
     """
     Load OpenAI API client.
 
@@ -18,18 +18,19 @@ def load_oai_model() -> OpenAI:
         OpenAI: The OpenAI API client.
     """
     # Load API key from environment variable
-    load_dotenv()
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key: 
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
 
     # Create OpenAI API client
-    openai_client = OpenAI(api_key=openai_api_key)
+    openai_client = OpenAI(api_key=api_key)
 
     logger.info("OpenAI Client set up")
 
     return openai_client
 
 
-def load_api_clients() -> tuple[OpenAI, OpenAI]:
+def load_api_clients(api_key: str = None) -> tuple[OpenAI, OpenAI]:
     """
     Load API clients.
 
@@ -37,7 +38,7 @@ def load_api_clients() -> tuple[OpenAI, OpenAI]:
     Returns:
         tuple[OpenAI, OpenAI ]: A tuple containing the retrieval client and generation client.
     """
-    openai_client = load_oai_model()
+    openai_client = load_oai_model(api_key=api_key)
     ret_client = gen_client = openai_client
     return ret_client, gen_client
 

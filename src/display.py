@@ -76,6 +76,14 @@ def make_app(n_results: int) -> None:
         initial_sidebar_state="auto",
         menu_items=None
     )
+    with st.sidebar:
+        api_key = st.text_input(
+            label="Input your OpenAI API Key (don't worry, this isn't stored anywhere)",
+            type='password'
+        )
+
+        st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
+
 
     use_oai = True
     st.title("Chat With a Decade of Previous NYR Talks")
