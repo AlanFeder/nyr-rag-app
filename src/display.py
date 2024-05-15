@@ -42,13 +42,15 @@ def display_context(keep_texts: dict) -> None:
     st.divider()
     st.subheader('RAG-identified relevant videos')
     n_vids = len(keep_texts)
-    if n_vids == 1:
+    if n_vids == 0:
+        st.markdown("No relevant videos identified")
+    elif n_vids == 1:
         _, vid_c1, _ = st.columns(3)
         vid_containers = [vid_c1]
     elif n_vids == 2:
         _, vid_c1, vid_c2, _ = st.columns([1/6, 1/3, 1/3, 1/6])
         vid_containers = [vid_c1, vid_c2]
-    else:
+    elif n_vids > 2:
         vid_containers = st.columns(n_vids)
     for i, (vid_id, vid_info) in enumerate(keep_texts.items()):
         vid_container = vid_containers[i]
