@@ -4,6 +4,8 @@ from .retrieval import do_retrieval
 from .generation import do_stream_generation, Stream
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
+from dotenv import load_dotenv
+import os
 
 logger = logging.getLogger()
 
@@ -89,10 +91,14 @@ def make_app(n_results: int) -> None:
         initial_sidebar_state="auto",
         menu_items=None
     )
+
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
     with st.sidebar:
         api_key = st.text_input(
             label="Input your OpenAI API Key (don't worry, this isn't stored anywhere)",
-            type='password'
+            type='password',
+            value=api_key
         )
 
         st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
@@ -115,7 +121,7 @@ def make_app(n_results: int) -> None:
         if prompt1 := st.chat_input(placeholder=placeholder1, key='input1'):
             with st.chat_message("user"):
                 st.markdown(prompt1)
-            ret_client, gen_client = load_api_clients()
+            ret_client, gen_client = load_api_clients(api_key=api_key)
             keep_texts = do_retrieval(query0=prompt1, n_results=n_results, api_client=ret_client)
             with videos_container:
                 display_context(keep_texts)

@@ -18,9 +18,9 @@ def load_oai_model(api_key: str = None) -> OpenAI:
         OpenAI: The OpenAI API client.
     """
     # Load API key from environment variable
-    if not api_key: 
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
+    # if not api_key: 
+    #     load_dotenv()
+    #     api_key = os.getenv("OPENAI_API_KEY")
 
     # Create OpenAI API client
     openai_client = OpenAI(api_key=api_key)
