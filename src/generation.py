@@ -53,16 +53,19 @@ def make_user_prompt(question: str, keep_texts: dict[str, dict[str, str]]) -> st
 Question: {question}
 ==============================
 '''
-    list_strs = []
-    for i, tx_val in enumerate(keep_texts.values()):
-        text0 = tx_val['text']
-        speaker_name = tx_val['Speaker']
-        list_strs.append(f'Video Transcript {i+1}\nSpeaker: {speaker_name}\n{text0}')
-    user_prompt += '\n---\n'.join(list_strs)
-    user_prompt += '''
+    if len(keep_texts) > 0:
+        list_strs = []
+        for i, tx_val in enumerate(keep_texts.values()):
+            text0 = tx_val['text']
+            speaker_name = tx_val['Speaker']
+            list_strs.append(f'Video Transcript {i+1}\nSpeaker: {speaker_name}\n{text0}')
+        user_prompt += '\n---\n'.join(list_strs)
+        user_prompt += '''
 ==============================
 After analyzing the above video transcripts, please provide a helpful answer to my question. Remember to stay within two paragraphs
 Address the response to me directly.  Do not use any information not explicitly supported by the transcripts. Remember to reference the speaker's name.'''
+    else:
+        user_prompt += "No relevant video transcripts were found.  Please just return a result that says something like 'I'm sorry, but the answer to [Question] was not found in the transcripts from the New York R Conference'"
     return user_prompt
 
 def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> tuple[str, float]:

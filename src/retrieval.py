@@ -91,7 +91,7 @@ def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, 
 
     # Get the top score and calculate the score threshold
     top_score = df_top['score'].iloc[0]
-    score_thresh = min(0.6, top_score - 0.05)
+    score_thresh = max(min(0.6, top_score - 0.05), 0.2)
 
     # Filter the top documents based on the score threshold
     df_top = df_top.loc[df_top['score'] > score_thresh]
@@ -158,8 +158,9 @@ def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict: #tupl
         # Limit the retrieved documents based on a score threshold
         keep_texts = limit_docs(df_sorted, df_talks, n_results, transcript_dicts)
         n_vids = len(keep_texts)
-        n_chunks_per_vid = 50 // n_vids
-        
+        if n_vids >= 1:
+            n_chunks_per_vid = 50 // n_vids
+            
         for video_id in keep_texts:
             df_sorted_chunks = sort_within_doc(full_embeds, arr_q, video_id)
             tx_chunk_info = transcripts_40seconds[video_id]
