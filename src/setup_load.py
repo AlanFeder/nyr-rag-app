@@ -4,6 +4,7 @@ from pyprojroot import here
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
+from groq import Groq
 import pandas as pd
 import pickle
 
@@ -18,9 +19,9 @@ def load_oai_model(api_key: str = None) -> OpenAI:
         OpenAI: The OpenAI API client.
     """
     # Load API key from environment variable
-    # if not api_key: 
-    #     load_dotenv()
-    #     api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key: 
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
 
     # Create OpenAI API client
     openai_client = OpenAI(api_key=api_key)
@@ -29,8 +30,27 @@ def load_oai_model(api_key: str = None) -> OpenAI:
 
     return openai_client
 
+@st.cache_resource(ttl=7200)
+def load_groq_model() -> Groq:
+    """
+    Load OpenAI API client.
 
-def load_api_clients(api_key: str = None) -> tuple[OpenAI, OpenAI]:
+    Returns:
+        OpenAI: The OpenAI API client.
+    """
+    # Load API key from environment variable
+    load_dotenv()
+    api_key = os.getenv("GROQ_API_KEY")
+
+    # Create Groq API client
+    groq_client = Groq(api_key=api_key)
+
+    logger.info("Groq Client set up")
+
+    return groq_client
+
+
+def load_api_clients(use_oai: bool = True, openai_api_key: str = None) -> tuple[OpenAI, OpenAI]:
     """
     Load API clients.
 
@@ -38,8 +58,13 @@ def load_api_clients(api_key: str = None) -> tuple[OpenAI, OpenAI]:
     Returns:
         tuple[OpenAI, OpenAI ]: A tuple containing the retrieval client and generation client.
     """
-    openai_client = load_oai_model(api_key=api_key)
-    ret_client = gen_client = openai_client
+    if use_oai:
+        openai_client = load_oai_model(api_key=openai_api_key)
+        ret_client = gen_client = openai_client
+    else:
+        ret_client = load_oai_model(api_key=openai_api_key)
+        gen_client = load_groq_model()
+
     return ret_client, gen_client
 
 @st.cache_data(ttl=7200)

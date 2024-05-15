@@ -159,7 +159,7 @@ def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict: #tupl
         keep_texts = limit_docs(df_sorted, df_talks, n_results, transcript_dicts)
         n_vids = len(keep_texts)
         if n_vids >= 1:
-            n_chunks_per_vid = 50 // n_vids
+            n_chunks_per_vid = 40 // n_vids
             
         for video_id in keep_texts:
             df_sorted_chunks = sort_within_doc(full_embeds, arr_q, video_id)
