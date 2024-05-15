@@ -60,6 +60,19 @@ def display_context(keep_texts: dict) -> None:
             st.caption(f"Similarity Score: {sim_score:.0f}/100")
             st.video(vid_url, start_time=vid_start)
 
+def display_footer() -> None:
+    st.divider()
+
+    st.caption('''This streamlit app was created for Alan Feder's [talk at the 10th Anniversary New York R Conference](https://rstats.ai/nyr.html). \n\n The slides used are [here](https://bit.ly/nyr-rag). \n\n The Github repository that houses all the code is [here](https://github.com/AlanFeder/nyr-rag-app) -- feel free to fork it and use it on your own!''')
+
+    st.divider()
+
+    st.subheader('Contact me!')
+    st.image('AJF_Headshot.jpg', width=60)
+    st.markdown('[Email](mailto:AlanFeder@gmail.com) | [Website](https://www.alanfeder.com/) | [LinkedIn](https://www.linkedin.com/in/alanfeder/) | [GitHub](https://github.com/AlanFeder)')
+
+    
+
 def make_app(n_results: int) -> None:
     """
     Create the core Streamlit application for the knowledge base QA system.
@@ -96,16 +109,7 @@ def make_app(n_results: int) -> None:
     footer_container = st.container()
 
     with footer_container:
-        st.divider()
-
-        st.caption('''This streamlit app was created for Alan Feder's [talk at the 10th Anniversary New York R Conference](https://rstats.ai/nyr.html).  The slides used are [here](https://bit.ly/nyr-rag).  The Github repository that houses all the code is [here](https://github.com/AlanFeder/nyr-rag-app) -- feel free to fork it and use it on your own!''')
-
-        st.divider()
-
-        st.subheader('Contact me!')
-        st.image('AJF_Headshot.jpg', width=60)
-        st.markdown('[Email](mailto:AlanFeder@gmail.com) | [Website](https://www.alanfeder.com/) | [LinkedIn](https://www.linkedin.com/in/alanfeder/) | [GitHub](https://github.com/AlanFeder)')
-
+        display_footer()
 
     with chat_container:
         if prompt1 := st.chat_input(placeholder=placeholder1, key='input1'):
