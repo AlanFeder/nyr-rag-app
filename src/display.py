@@ -20,6 +20,7 @@ def display_stream_generation(stream_response: Stream) -> int:
         int: The number of completion tokens.
     """
     text_out = st.write_stream(stream_response)
+    logger.info("Streaming completed")
     completion_tokens = calc_n_tokens(text_out)
     return completion_tokens
 
@@ -28,16 +29,17 @@ def display_cost(cost_cents: float) -> None:
     Display the cost of the retrieval and generation.
 
     Args:
-        cost_cents(float): The cost in cents
+        cost_cents (float): The cost in cents.
     """
     st.caption(f'This cost approximately {cost_cents:.01f}¢')
+    logger.info("Cost displayed")
 
-def display_context(keep_texts: dict) -> None:
+def display_context(keep_texts: dict[str, dict[str, str]]) -> None:
     """
     Display the RAG-identified relevant videos.
 
     Args:
-        keep_texts (dict): The retrieved relevant texts.
+        keep_texts (dict[str, dict[str, str]]): The retrieved relevant texts.
     """
     st.divider()
     st.subheader('RAG-identified relevant videos')
@@ -65,9 +67,13 @@ def display_context(keep_texts: dict) -> None:
             st.video(vid_url, start_time=vid_start)
             with st.expander(label='Transcript', expanded=False):
                 st.markdown(vid_info['text'])
+    logger.info("Context displayed")
 
 
 def display_footer() -> None:
+    """
+    Display the footer section of the Streamlit app.
+    """
     st.divider()
 
     st.caption('''This streamlit app was created for Alan Feder's [talk at the 10th Anniversary New York R Conference](https://rstats.ai/nyr.html). \n\n The slides used are [here](https://bit.ly/nyr-rag). \n\n The Github repository that houses all the code is [here](https://github.com/AlanFeder/nyr-rag-app) -- feel free to fork it and use it on your own!''')
@@ -77,8 +83,7 @@ def display_footer() -> None:
     st.subheader('Contact me!')
     st.image('AJF_Headshot.jpg', width=60)
     st.markdown('[Email](mailto:AlanFeder@gmail.com) | [Website](https://www.alanfeder.com/) | [LinkedIn](https://www.linkedin.com/in/alanfeder/) | [GitHub](https://github.com/AlanFeder)')
-
-    
+    logger.info("footer displayed")
 
 def make_app(n_results: int) -> None:
     """
@@ -88,6 +93,7 @@ def make_app(n_results: int) -> None:
         n_results (int): The number of documents to retrieve.
     """
     logger.info("Start building streamlit app")
+
     # Configure Streamlit page settings
     st.set_page_config(
         page_title='RAG-time in the Big Apple', 
@@ -134,3 +140,4 @@ def make_app(n_results: int) -> None:
                 embedding_tokens = calc_n_tokens(prompt1)
                 cost_cents = calc_cost(prompt_tokens, completion_tokens, embedding_tokens)
                 display_cost(cost_cents)
+    logger.info("You're done!")

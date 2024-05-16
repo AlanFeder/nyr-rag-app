@@ -5,6 +5,19 @@ from .utils import calc_n_tokens
 
 logger = logging.getLogger()
 
+SYSTEM_PROMPT = '''
+You are an AI assistant that helps answer questions by searching through video transcripts. 
+I have retrieved the transcripts most likely to answer the user's question.
+Carefully read through the transcripts to find information that helps answer the question. 
+Be brief - your response should not be more than two paragraphs.
+Only use information directly stated in the provided transcripts to answer the question. 
+Do not add any information or make any claims that are not explicitly supported by the transcripts.
+If the transcripts do not contain enough information to answer the question, state that you do not have enough information to provide a complete answer.
+Format the response clearly.  If only one of the transcripts answers the question, don't reference the other and don't explain why its content is irrelevant.
+Do not speak in the first person. DO NOT write a letter, make an introduction, or salutation.
+Reference the speaker's name when you say what they said.
+'''
+
 def set_messages(system_prompt: str, user_prompt: str) -> tuple[list[dict[str, str]], int]:
     """
     Set the messages for the chat completion.
@@ -23,20 +36,8 @@ def set_messages(system_prompt: str, user_prompt: str) -> tuple[list[dict[str, s
     n_system_tokens = calc_n_tokens(system_prompt)
     n_user_tokens = calc_n_tokens(user_prompt)
     n_input_tokens = n_system_tokens + n_user_tokens
+    logger.info(f"System Prompt is {n_system_tokens} tokens, User Prompt is {n_user_tokens} tokens")
     return messages1, n_input_tokens
-
-SYSTEM_PROMPT = '''
-You are an AI assistant that helps answer questions by searching through video transcripts. 
-I have retrieved the transcripts most likely to answer the user's question.
-Carefully read through the transcripts to find information that helps answer the question. 
-Be brief - your response should not be more than two paragraphs.
-Only use information directly stated in the provided transcripts to answer the question. 
-Do not add any information or make any claims that are not explicitly supported by the transcripts.
-If the transcripts do not contain enough information to answer the question, state that you do not have enough information to provide a complete answer.
-Format the response clearly.  If only one of the transcripts answers the question, don't reference the other and don't explain why its content is irrelevant.
-Do not speak in the first person. DO NOT write a letter, make an introduction, or salutation.
-Reference the speaker's name when you say what they said.
-'''
 
 def make_user_prompt(question: str, keep_texts: dict[str, dict[str, str]]) -> str:
     """
@@ -65,19 +66,21 @@ Question: {question}
 After analyzing the above video transcripts, please provide a helpful answer to my question. Remember to stay within two paragraphs
 Address the response to me directly.  Do not use any information not explicitly supported by the transcripts. Remember to reference the speaker's name.'''
     else:
+        # If no relevant transcripts are found, generate a default response
         user_prompt += "No relevant video transcripts were found.  Please just return a result that says something like 'I'm sorry, but the answer to [Question] was not found in the transcripts from the New York R Conference'"
+    logger.info(f'User prompt: {user_prompt}')
     return user_prompt
 
-def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> tuple[str, float]:
+def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> Stream:
     """
     Generate a response using the specified chat completion model.
 
     Args:
         messages1 (list[dict[str, str]]): The messages for the chat completion.
-        gen_client (OpenAI ): The generation client (OpenAI).
+        gen_client (OpenAI): The generation client (OpenAI).
 
     Returns:
-        tuple[str, float]: A tuple containing the generated response and the cost in cents.
+        Stream: The generated response stream.
     """
     if isinstance(gen_client, OpenAI):
         model1 = 'gpt-4o'
@@ -94,20 +97,20 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> tu
         temperature=0,
         stream=True
     )
-
+    logger.info('Stream prepared')
     return response1
 
-def do_stream_generation(query1: str, keep_texts: dict, gen_client: OpenAI) -> tuple[Stream, int]:
+def do_stream_generation(query1: str, keep_texts: dict[str, dict[str, str]], gen_client: OpenAI) -> tuple[Stream, int]:
     """
     Generate the chatbot response using the specified generation client.
 
     Args:
         query1 (str): The user's query.
-        keep_texts (dict): The retrieved relevant texts.
-        gen_client (OpenAI: The generation client (OpenAI).
+        keep_texts (dict[str, dict[str, str]]): The retrieved relevant texts.
+        gen_client (OpenAI): The generation client (OpenAI).
 
     Returns:
-        tuple[Stream, int]: A tuple containing the generated response and the number of prompt tokens.
+        tuple[Stream, int]: A tuple containing the generated response stream and the number of prompt tokens.
     """
     user_prompt = make_user_prompt(query1, keep_texts=keep_texts)
     messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)

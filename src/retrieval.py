@@ -8,12 +8,12 @@ from .setup_load import import_data, OpenAI
 
 logger = logging.getLogger()
 
-def do_sort(embed_dict: dict, arr_q: np.ndarray) -> pd.DataFrame:
+def do_sort(embed_dict: dict[str, np.ndarray], arr_q: np.ndarray) -> pd.DataFrame:
     """
     Sort documents based on their cosine similarity to the query embedding.
 
     Args:
-        full_embeds (dict): Dictionary containing document embeddings.
+        embed_dict (dict[str, np.ndarray]): Dictionary containing document embeddings.
         arr_q (np.ndarray): Query embedding.
 
     Returns:
@@ -37,12 +37,12 @@ def do_sort(embed_dict: dict, arr_q: np.ndarray) -> pd.DataFrame:
     return df_sorted
 
 
-def sort_docs(full_embeds: dict, arr_q: np.ndarray) -> pd.DataFrame:
+def sort_docs(full_embeds: dict[str, dict[str, np.ndarray]], arr_q: np.ndarray) -> pd.DataFrame:
     """
     Sort documents based on their cosine similarity to the query embedding.
 
     Args:
-        full_embeds (dict): Dictionary containing document embeddings.
+        full_embeds (dict[str, dict[str, np.ndarray]]): Dictionary containing document embeddings.
         arr_q (np.ndarray): Query embedding.
 
     Returns:
@@ -51,26 +51,35 @@ def sort_docs(full_embeds: dict, arr_q: np.ndarray) -> pd.DataFrame:
     # Extract talk embeddings and convert to list and array
     abstract_embeds = full_embeds['abstract']
 
-    return do_sort(abstract_embeds, arr_q)
+    sorted_abstracts = do_sort(abstract_embeds, arr_q)
 
-def sort_within_doc(full_embeds: dict, arr_q: np.ndarray, video_id: str) -> pd.DataFrame:
+    logger.info("abstracts sorted")
+
+    return sorted_abstracts
+
+def sort_within_doc(full_embeds: dict[str, dict[str, np.ndarray]], arr_q: np.ndarray, video_id: str) -> pd.DataFrame:
     """
-    Sort documents based on their cosine similarity to the query embedding.
+    Sort segments within a document based on their cosine similarity to the query embedding.
 
     Args:
-        full_embeds (dict): Dictionary containing document embeddings.
+        full_embeds (dict[str, dict[str, np.ndarray]]): Dictionary containing document embeddings.
         arr_q (np.ndarray): Query embedding.
+        video_id (str): ID of the video/document.
 
     Returns:
-        pd.DataFrame: Sorted dataframe containing document IDs and similarity scores.
+        pd.DataFrame: Sorted dataframe containing segment IDs and similarity scores.
     """
     # Extract talk embeddings and convert to list and array
     seg_embeds = full_embeds['seg']
     these_seg_embeds = seg_embeds[video_id]
 
-    return do_sort(these_seg_embeds, arr_q)
+    sorted_segs = do_sort(these_seg_embeds, arr_q)
 
-def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, transcript_dicts: dict) -> dict:
+    logger.info(f'Segments sorted within {video_id}')
+
+    return sorted_segs
+
+def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, transcript_dicts: dict[str, dict]) -> dict[str, dict]:
     """
     Limit the retrieved documents based on a score threshold and return the top documents.
 
@@ -78,10 +87,10 @@ def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, 
         df_sorted (pd.DataFrame): Sorted dataframe containing document IDs and similarity scores.
         df_talks (pd.DataFrame): Dataframe containing talk information.
         n_results (int): Number of top documents to retrieve.
-        transcript_dicts (dict): Dictionary containing transcript text for each document ID.
+        transcript_dicts (dict[str, dict]): Dictionary containing transcript text for each document ID.
 
     Returns:
-        dict: Dictionary containing the top documents with their IDs, scores, and text.
+        dict[str, dict]: Dictionary containing the top documents with their IDs, scores, and text.
     """
     # Merge the sorted dataframe with the talks dataframe
     df_sorted = df_sorted.merge(df_talks)
@@ -101,19 +110,20 @@ def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, 
     for id0 in keep_texts:
         keep_texts[id0]['text'] = transcript_dicts[id0]['text']
 
+    logger.info(f"{len(keep_texts)} videos kept")
+
     return keep_texts
 
-def do_1_embed(lt: str, emb_client: OpenAI) -> np.ndarray:# tuple[np.ndarray, int]:
+def do_1_embed(lt: str, emb_client: OpenAI) -> np.ndarray:
     """
     Generate embeddings using the OpenAI API for a single text.
 
     Args:
         lt (str): A text to generate embeddings for.
-        emb_client (OpenAI ): The embedding API client (OpenAI ).
+        emb_client (OpenAI): The embedding API client (OpenAI).
 
     Returns:
-        np.ndarray: the generated embeddings
-        # tuple[np.ndarray, int]: A tuple containing the generated embeddings and the total number of tokens.
+        np.ndarray: The generated embeddings.
     """
     if isinstance(emb_client, OpenAI):
         # Generate embeddings using OpenAI API
@@ -122,26 +132,24 @@ def do_1_embed(lt: str, emb_client: OpenAI) -> np.ndarray:# tuple[np.ndarray, in
             model='text-embedding-3-small',
         )
         here_embed = np.array(embed_response.data[0].embedding)
-        # n_toks = embed_response.usage.total_tokens
     else:
         logger.error("There is some problem with the embedding client")
         raise Exception("There is some problem with the embedding client")
     
     logger.info(f'Embedded {lt}')
-    return here_embed#, n_toks
+    return here_embed
 
-def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict: #tuple[dict, float]:
+def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict[str, dict]:
     """
     Retrieve relevant documents based on the user's query.
 
     Args:
         query0 (str): The user's query.
         n_results (int): The number of documents to retrieve.
-        api_client (OpenAI): The API client (OpenAI ) for generating embeddings.
+        api_client (OpenAI): The API client (OpenAI) for generating embeddings.
 
     Returns:
-        dict: the retrieved documents
-        # tuple[dict, float]: A tuple containing the retrieved documents and the cost in cents.
+        dict[str, dict]: The retrieved documents.
     """
     logger.info(f"Starting document retrieval for query: {query0}")
     try:
@@ -149,7 +157,6 @@ def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict: #tupl
         df_talks, transcript_dicts, transcripts_40seconds, full_embeds = import_data()
         
         # Generate embeddings for the query
-        # arr_q, n_emb_toks = do_1_embed(query0, api_client)
         arr_q = do_1_embed(query0, api_client)
         
         # Sort documents based on their cosine similarity to the query embedding
@@ -182,16 +189,11 @@ def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict: #tupl
             relevant_text = '\n...\n'.join(text_grps_list)
             keep_texts[video_id]['best_video_start'] = top_chunk_start
             keep_texts[video_id]['relevant_text'] = relevant_text
-
-
-            
-
-        # # Calculate the cost in cents
-        # cost_cents = 2 * n_emb_toks / 10_000
     except Exception as e:
         logger.error(f"Error during document retrieval for query: {query0}, Error: {str(e)}")
         raise
 
+    logger.info("Retrieval Done")
+
     return keep_texts
 
-# def retrieve_chunks
