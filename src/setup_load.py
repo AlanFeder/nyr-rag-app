@@ -9,7 +9,7 @@ import pickle
 
 logger = logging.getLogger()
 
-@st.cache_resource(ttl=7200)
+@st.cache_resource(ttl=14400)
 def load_oai_model(api_key: str = None) -> OpenAI:
     """
     Load OpenAI API client.
@@ -42,7 +42,7 @@ def load_api_clients(api_key: str = None) -> tuple[OpenAI, OpenAI]:
     ret_client = gen_client = openai_client
     return ret_client, gen_client
 
-@st.cache_data(ttl=7200)
+@st.cache_data(ttl=14400)
 def import_data() -> tuple[pd.DataFrame, dict, dict]:
     """
     Import data from files.
