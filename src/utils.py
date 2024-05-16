@@ -24,7 +24,7 @@ def dict_to_list_and_array(data: dict[str, np.ndarray]) -> tuple[list[str], np.n
 
 def calc_n_tokens(text_in: str) -> int:
     """
-    Calculate the number of tokens in the input text using the 'o200k_base' encoding.
+    Calculate the number of tokens in the input text using the 'cl100k_base' encoding.
 
     Args:
         text_in (str): The input text.
@@ -38,7 +38,7 @@ def calc_n_tokens(text_in: str) -> int:
 
 def calc_cost(prompt_tokens: int, completion_tokens: int, embedding_tokens: int) -> float:
     """
-    Calculate the cost in cents based on the number of prompt and completion tokens.
+    Calculate the cost in cents based on the number of prompt, completion, and embedding tokens.
 
     Args:
         prompt_tokens (int): The number of tokens in the prompt.
@@ -54,8 +54,19 @@ def calc_cost(prompt_tokens: int, completion_tokens: int, embedding_tokens: int)
 
     return cost_cents
 
-def split_into_consecutive(arr):
-    """ I got the following function from the following GPT prompt
+def split_into_consecutive(arr: np.ndarray) -> list[np.ndarray]:
+    """ 
+    Split a numpy array into a list of arrays, where each sub-element contains consecutive parts.
+
+    Args:
+        arr (np.ndarray): The input numpy array.
+
+    Returns:
+        List[np.ndarray]: A list of numpy arrays, where each sub-element contains consecutive parts.
+    
+    ---
+
+    I got the following function from the following GPT prompt
     > I have a numpy array of numbers.  some are consecutive, some are not (e.g. 3, 4, 5, 6, 10, 11, 12, 13, 19, 20, 21).  How can I split it into a list of arrays, where each sub-element is just the consecutive parts (e.g. [[3,4,5,6],[10,11,12,13],[19,20,21]])?
 
     The goal is so that if there are consecutive minutes, and I look at the before-and-after, they are combined as needed
