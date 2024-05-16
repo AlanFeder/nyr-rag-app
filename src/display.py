@@ -4,7 +4,6 @@ from .retrieval import do_retrieval
 from .generation import do_stream_generation, Stream
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
-from dotenv import load_dotenv
 import os
 
 logger = logging.getLogger()
@@ -103,13 +102,10 @@ def make_app(n_results: int) -> None:
         menu_items=None
     )
 
-    load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
     with st.sidebar:
         api_key = st.text_input(
             label="Input your OpenAI API Key (don't worry, this isn't stored anywhere)",
-            type='password',
-            value=api_key
+            type='password'
         )
 
         st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
