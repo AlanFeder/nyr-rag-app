@@ -51,7 +51,11 @@ def sort_docs(full_embeds: dict[str, dict[str, np.ndarray]], arr_q: np.ndarray) 
     # Extract talk embeddings and convert to list and array
     abstract_embeds = full_embeds['abstract']
 
-    return do_sort(abstract_embeds, arr_q)
+    sorted_abstracts = do_sort(abstract_embeds, arr_q)
+
+    logger.info("abstracts sorted")
+
+    return sorted_abstracts
 
 def sort_within_doc(full_embeds: dict[str, dict[str, np.ndarray]], arr_q: np.ndarray, video_id: str) -> pd.DataFrame:
     """
@@ -69,7 +73,11 @@ def sort_within_doc(full_embeds: dict[str, dict[str, np.ndarray]], arr_q: np.nda
     seg_embeds = full_embeds['seg']
     these_seg_embeds = seg_embeds[video_id]
 
-    return do_sort(these_seg_embeds, arr_q)
+    sorted_segs = do_sort(these_seg_embeds, arr_q)
+
+    logger.info(f'Segments sorted within {video_id}')
+
+    return sorted_segs
 
 def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, transcript_dicts: dict[str, dict]) -> dict[str, dict]:
     """
@@ -102,6 +110,8 @@ def limit_docs(df_sorted: pd.DataFrame, df_talks: pd.DataFrame, n_results: int, 
     for id0 in keep_texts:
         keep_texts[id0]['text'] = transcript_dicts[id0]['text']
 
+    logger.info(f"{len(keep_texts)} videos kept")
+
     return keep_texts
 
 def do_1_embed(lt: str, emb_client: OpenAI) -> np.ndarray:
@@ -122,13 +132,12 @@ def do_1_embed(lt: str, emb_client: OpenAI) -> np.ndarray:
             model='text-embedding-3-small',
         )
         here_embed = np.array(embed_response.data[0].embedding)
-        # n_toks = embed_response.usage.total_tokens
     else:
         logger.error("There is some problem with the embedding client")
         raise Exception("There is some problem with the embedding client")
     
     logger.info(f'Embedded {lt}')
-    return here_embed#, n_toks
+    return here_embed
 
 def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict[str, dict]:
     """
@@ -183,6 +192,8 @@ def do_retrieval(query0: str, n_results: int, api_client: OpenAI) -> dict[str, d
     except Exception as e:
         logger.error(f"Error during document retrieval for query: {query0}, Error: {str(e)}")
         raise
+
+    logger.info("Retrieval Done")
 
     return keep_texts
 

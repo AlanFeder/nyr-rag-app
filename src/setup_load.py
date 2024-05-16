@@ -59,6 +59,6 @@ def import_data() -> tuple[pd.DataFrame, dict, dict]:
     with open(fp_data / 'full_embeds.pkl', 'rb') as f2:
         full_embeds = pickle.load(f2)
 
-    logging.info('Loaded files')
+    logger.info('Loaded files')
 
     return df_talks, transcript_dicts, transcripts_40seconds, full_embeds

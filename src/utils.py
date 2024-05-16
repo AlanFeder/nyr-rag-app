@@ -24,7 +24,7 @@ def dict_to_list_and_array(data: dict[str, np.ndarray]) -> tuple[list[str], np.n
 
 def calc_n_tokens(text_in: str) -> int:
     """
-    Calculate the number of tokens in the input text using the 'cl100k_base' encoding.
+    Calculate the number of tokens in the input text using the 'o200k_base' encoding.
 
     Args:
         text_in (str): The input text.
@@ -34,7 +34,11 @@ def calc_n_tokens(text_in: str) -> int:
     """
     tok_model = tiktoken.get_encoding('o200k_base')
     token_ids = tok_model.encode(text=text_in)
-    return len(token_ids)
+    n_tokens = len(token_ids)
+
+    logger.info(f'{n_tokens} counted')
+
+    return n_tokens
 
 def calc_cost(prompt_tokens: int, completion_tokens: int, embedding_tokens: int) -> float:
     """
@@ -48,9 +52,13 @@ def calc_cost(prompt_tokens: int, completion_tokens: int, embedding_tokens: int)
     Returns:
         float: The cost in cents.
     """
-    cost_cents = prompt_tokens / 2000
-    cost_cents += 3 * completion_tokens / 2000
-    cost_cents += embedding_tokens / 500000
+    prompt_cost = prompt_tokens / 2000
+    completion_cost = 3 * completion_tokens / 2000
+    embedding_cost = embedding_tokens / 500000
+
+    cost_cents = prompt_cost + completion_cost + embedding_cost
+
+    logger.info(f'Costs: Embedding: {embedding_cost}. Prompt: {prompt_cost}. Completion: {completion_cost}. Total Cost: {cost_cents}')
 
     return cost_cents
 
@@ -87,5 +95,7 @@ def split_into_consecutive(arr: np.ndarray) -> list[np.ndarray]:
 
     # Append the last sequence
     result.append(np.array(temp))
+
+    logger.info(f'{len(arr)} elements split into {len(result)} lists')
 
     return result

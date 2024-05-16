@@ -20,6 +20,7 @@ def display_stream_generation(stream_response: Stream) -> int:
         int: The number of completion tokens.
     """
     text_out = st.write_stream(stream_response)
+    logger.info("Streaming completed")
     completion_tokens = calc_n_tokens(text_out)
     return completion_tokens
 
@@ -31,6 +32,7 @@ def display_cost(cost_cents: float) -> None:
         cost_cents (float): The cost in cents.
     """
     st.caption(f'This cost approximately {cost_cents:.01f}¢')
+    logger.info("Cost displayed")
 
 def display_context(keep_texts: dict[str, dict[str, str]]) -> None:
     """
@@ -65,6 +67,7 @@ def display_context(keep_texts: dict[str, dict[str, str]]) -> None:
             st.video(vid_url, start_time=vid_start)
             with st.expander(label='Transcript', expanded=False):
                 st.markdown(vid_info['text'])
+    logger.info("Context displayed")
 
 
 def display_footer() -> None:
@@ -80,7 +83,7 @@ def display_footer() -> None:
     st.subheader('Contact me!')
     st.image('AJF_Headshot.jpg', width=60)
     st.markdown('[Email](mailto:AlanFeder@gmail.com) | [Website](https://www.alanfeder.com/) | [LinkedIn](https://www.linkedin.com/in/alanfeder/) | [GitHub](https://github.com/AlanFeder)')
-
+    logger.info("footer displayed")
 
 def make_app(n_results: int) -> None:
     """
@@ -137,3 +140,4 @@ def make_app(n_results: int) -> None:
                 embedding_tokens = calc_n_tokens(prompt1)
                 cost_cents = calc_cost(prompt_tokens, completion_tokens, embedding_tokens)
                 display_cost(cost_cents)
+    logger.info("You're done!")
