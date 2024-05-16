@@ -63,6 +63,9 @@ def display_context(keep_texts: dict) -> None:
             st.markdown(f"**{vid_title}**\n\n*{vid_speaker}*\n\nYear: {vid_id[4:8]}")
             st.caption(f"Similarity Score: {sim_score:.0f}/100")
             st.video(vid_url, start_time=vid_start)
+            with st.expander(label='Transcript', expanded=False):
+                st.markdown(vid_info['text'])
+
 
 def display_footer() -> None:
     st.divider()
@@ -105,8 +108,6 @@ def make_app(n_results: int) -> None:
 
         st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
 
-
-    use_oai = True
     st.title("Chat With a Decade of Previous NYR Talks")
 
     st.markdown("What question do you want to ask of previous speakers?")
