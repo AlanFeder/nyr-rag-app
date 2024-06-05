@@ -1,7 +1,7 @@
 import streamlit as st
 import logging
 from .retrieval import do_retrieval
-from .generation import do_stream_generation, Stream
+from .generation import do_stream_generation, oai_Stream, groq_Stream
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
 from dotenv import load_dotenv
@@ -9,7 +9,7 @@ import os
 
 logger = logging.getLogger()
 
-def display_stream_generation(stream_response: Stream) -> int:
+def display_stream_generation(stream_response: oai_Stream | groq_Stream) -> int:
     """
     Display the chatbot response.
 
@@ -103,14 +103,25 @@ def make_app(n_results: int) -> None:
         menu_items=None
     )
 
+    # use_oai = model_choice == 'ChatGPT'
     load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
-    with st.sidebar:
-        api_key = st.text_input(
-            label="Input your OpenAI API Key (don't worry, this isn't stored anywhere)",
-            type='password',
-            value=api_key
-        )
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    with st.sidebar: 
+        use_oai = st.radio(
+            label = "Do you want to generate with GPT (More accurate) or Open-source Llama3 (free)?",
+            # options = ['ChatGPT', 'Llama3'],
+            options = [True, False],
+            format_func=lambda x: 'ChatGPT' if x else 'Llama3',
+            index=0)
+        if use_oai:
+            openai_api_key = st.text_input(
+                label="Input your OpenAI API Key (don't worry, this isn't stored anywhere)",
+                type='password',
+                value=openai_api_key
+            )
+            st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
+        else:
+            st.markdown("Rate limits may be applied to this app do to its use of [Groq](https://groq.com/)")
 
         st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
 
@@ -130,7 +141,7 @@ def make_app(n_results: int) -> None:
         if prompt1 := st.chat_input(placeholder=placeholder1, key='input1'):
             with st.chat_message("user"):
                 st.markdown(prompt1)
-            ret_client, gen_client = load_api_clients(api_key=api_key)
+            ret_client, gen_client = load_api_clients(use_oai=use_oai, openai_api_key=openai_api_key)
             keep_texts = do_retrieval(query0=prompt1, n_results=n_results, api_client=ret_client)
             with videos_container:
                 display_context(keep_texts)
