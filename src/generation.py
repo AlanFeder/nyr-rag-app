@@ -2,7 +2,6 @@ import logging
 from .setup_load import OpenAI
 from openai import Stream
 from .utils import calc_n_tokens
-from langsmith import traceable
 
 logger = logging.getLogger()
 
@@ -19,7 +18,6 @@ Do not speak in the first person. DO NOT write a letter, make an introduction, o
 Reference the speaker's name when you say what they said.
 '''
 
-@traceable
 def set_messages(system_prompt: str, user_prompt: str) -> tuple[list[dict[str, str]], int]:
     """
     Set the messages for the chat completion.
@@ -70,7 +68,7 @@ Address the response to me directly.  Do not use any information not explicitly 
     else:
         # If no relevant transcripts are found, generate a default response
         user_prompt += "No relevant video transcripts were found.  Please just return a result that says something like 'I'm sorry, but the answer to [Question] was not found in the transcripts from the New York R Conference'"
-    logger.info(f'User prompt: {user_prompt}')
+    # logger.info(f'User prompt: {user_prompt}')
     return user_prompt
 
 def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> Stream:
