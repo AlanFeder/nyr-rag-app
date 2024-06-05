@@ -2,6 +2,7 @@ import logging
 from .setup_load import OpenAI
 from openai import Stream
 from .utils import calc_n_tokens
+from langsmith import traceable
 
 logger = logging.getLogger()
 
@@ -18,6 +19,7 @@ Do not speak in the first person. DO NOT write a letter, make an introduction, o
 Reference the speaker's name when you say what they said.
 '''
 
+@traceable
 def set_messages(system_prompt: str, user_prompt: str) -> tuple[list[dict[str, str]], int]:
     """
     Set the messages for the chat completion.
@@ -99,6 +101,7 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI) -> St
     )
     logger.info('Stream prepared')
     return response1
+
 
 def do_stream_generation(query1: str, keep_texts: dict[str, dict[str, str]], gen_client: OpenAI) -> tuple[Stream, int]:
     """

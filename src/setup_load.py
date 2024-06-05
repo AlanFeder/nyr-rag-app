@@ -6,6 +6,7 @@ import os
 from openai import OpenAI
 import pandas as pd
 import pickle
+from langsmith.wrappers import wrap_openai
 
 logger = logging.getLogger()
 
@@ -24,6 +25,7 @@ def load_oai_model(api_key: str = None) -> OpenAI:
 
     # Create OpenAI API client
     openai_client = OpenAI(api_key=api_key)
+    openai_client = wrap_openai(openai_client)
 
     logger.info("OpenAI Client set up")
 
