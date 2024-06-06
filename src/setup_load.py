@@ -23,7 +23,6 @@ def load_oai_model(api_key: str = None) -> OpenAI:
     if not api_key: 
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY")
-    st.write(api_key)
     # Create OpenAI API client
     openai_client = OpenAI(api_key=api_key)
     openai_client = wrap_openai(openai_client)
