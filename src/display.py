@@ -1,7 +1,7 @@
 import streamlit as st
 import logging
 from .retrieval import do_retrieval
-from .generation import do_stream_generation, oai_Stream, groq_Stream
+from .generation import do_generation
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
 from dotenv import load_dotenv
@@ -9,7 +9,7 @@ import os
 
 logger = logging.getLogger()
 
-def display_stream_generation(stream_response: oai_Stream | groq_Stream) -> int:
+def display_generation(text_response: str) -> int:
     """
     Display the chatbot response.
 
@@ -19,8 +19,8 @@ def display_stream_generation(stream_response: oai_Stream | groq_Stream) -> int:
     Returns:
         int: The number of completion tokens.
     """
-    text_out = st.write_stream(stream_response)
-    logger.info("Streaming completed")
+    text_out = st.write(text_response)
+    logger.info("Printing completed")
     completion_tokens = calc_n_tokens(text_out)
     return completion_tokens
 
@@ -143,10 +143,12 @@ def make_app(n_results: int) -> None:
             keep_texts = do_retrieval(query0=prompt1, n_results=n_results, api_client=ret_client)
             with videos_container:
                 display_context(keep_texts)
-            stream_response, prompt_tokens = do_stream_generation(prompt1, keep_texts, gen_client)
+            stream_response, prompt_tokens = do_generation(prompt1, keep_texts, gen_client)
             with st.chat_message("assistant"):
-                completion_tokens = display_stream_generation(stream_response)
+                completion_tokens = display_generation(stream_response)
                 embedding_tokens = calc_n_tokens(prompt1)
+                if not use_oai:
+                    completion_tokens = prompt_tokens = 0
                 cost_cents = calc_cost(prompt_tokens, completion_tokens, embedding_tokens)
                 display_cost(cost_cents)
     logger.info("You're done!")
