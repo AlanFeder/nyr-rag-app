@@ -104,8 +104,8 @@ def make_app(n_results: int) -> None:
     )
 
     # use_oai = model_choice == 'ChatGPT'
-    load_dotenv()
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+    # load_dotenv()
+    # openai_api_key = os.getenv("OPENAI_API_KEY")
     with st.sidebar: 
         use_oai = st.radio(
             label = "Do you want to generate with GPT (More accurate) or Open-source Llama3 (free)?",
