@@ -1,8 +1,5 @@
 import logging
-from typing import Generator
 from .setup_load import OpenAI, Groq
-from openai import Stream as oai_Stream
-from groq import Stream as groq_Stream
 from .utils import calc_n_tokens
 from langsmith import traceable
 
@@ -78,7 +75,7 @@ Address the response to me directly.  Do not use any information not explicitly 
     return user_prompt
 
 @traceable
-def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> oai_Stream | groq_Stream:
+def do_1_query(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> str: 
     """
     Generate a response using the specified chat completion model.
 
@@ -93,7 +90,6 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq
         model1 = 'gpt-4o'
     elif isinstance(gen_client, Groq):
         model1 = 'llama3-8b-8192'
-        # model1 = 'gpt-3.5-turbo'
     else:
         logger.error("There is some problem with the generator client")
         raise Exception("There is some problem with the generator client")
@@ -104,19 +100,18 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq
         model=model1,
         seed=18,
         temperature=0,
-        stream=True
+        stream=False
     )
 
-    if isinstance(gen_client, Groq):
-        logger.info(response1)
-        response1 = support_groq(response1)
-        # if len(text_out.strip()) == 0:
-        #     logger.error(f'We have a problem with {str(response1)}')
-        # response1 = text_out
+    text1 = text_from_response(response1)
 
-    return response1
+    return text1
 
-def do_stream_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq) -> tuple[oai_Stream | groq_Stream, int]:
+def text_from_response(response1) -> str:
+    return response1.choices[0].message.content
+
+
+def do_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq) -> tuple[str, int]:
     """
     Generate the chatbot response using the specified generation client.
 
@@ -131,25 +126,6 @@ def do_stream_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Gro
     is_oai = True if isinstance(gen_client, OpenAI) else False
     user_prompt = make_user_prompt(query1, keep_texts=keep_texts, is_oai=is_oai)
     messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)
-    response = do_1_query_stream(messages1, gen_client)
+    response = do_1_query(messages1, gen_client)
 
     return response, prompt_tokens
-
-
-def support_groq(groq_stream: groq_Stream) -> Generator[str, None, None]:
-    """
-    Convert a Groq stream into a generator of strings.
-
-    This function takes a Groq stream as input and yields each chunk of the stream
-    as a string. It is used to support streaming responses from the Groq API.
-
-    Args:
-        groq_stream (groq_Stream): The Groq stream to convert.
-
-    Yields:
-        str: Each chunk of the Groq stream as a string.
-    """
-    for chunk in groq_stream:
-        text0 = chunk.choices[0].delta.content
-        text0 = '' if text0 is None else text0
-        yield text0
