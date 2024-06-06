@@ -4,6 +4,7 @@ from .setup_load import OpenAI, Groq
 from openai import Stream as oai_Stream
 from groq import Stream as groq_Stream
 from .utils import calc_n_tokens
+from langsmith import traceable
 
 logger = logging.getLogger()
 
@@ -41,7 +42,7 @@ def set_messages(system_prompt: str, user_prompt: str) -> tuple[list[dict[str, s
     logger.info(f"System Prompt is {n_system_tokens} tokens, User Prompt is {n_user_tokens} tokens")
     return messages1, n_input_tokens
 
-def make_user_prompt(question: str, keep_texts: dict[str, dict[str, str]]) -> str:
+def make_user_prompt(question: str, keep_texts: dict[str, dict[str, str]], is_oai: bool = True) -> str:
     """
     Create the user prompt based on the question and the retrieved transcripts.
 
@@ -59,7 +60,10 @@ Question: {question}
     if len(keep_texts) > 0:
         list_strs = []
         for i, tx_val in enumerate(keep_texts.values()):
-            text0 = tx_val['text']
+            if is_oai:
+                text0 = tx_val['text']
+            else:
+                text0 = tx_val['relevant_text']
             speaker_name = tx_val['Speaker']
             list_strs.append(f'Video Transcript {i+1}\nSpeaker: {speaker_name}\n{text0}')
         user_prompt += '\n---\n'.join(list_strs)
@@ -73,6 +77,7 @@ Address the response to me directly.  Do not use any information not explicitly 
     # logger.info(f'User prompt: {user_prompt}')
     return user_prompt
 
+@traceable
 def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> oai_Stream | groq_Stream:
     """
     Generate a response using the specified chat completion model.
@@ -102,9 +107,9 @@ def do_1_query_stream(messages1: list[dict[str, str]], gen_client: OpenAI | Groq
         stream=True
     )
 
-    # if isinstance(gen_client, Groq):
-    #     logger.info(response1)
-    #     response1 = support_groq(response1)
+    if isinstance(gen_client, Groq):
+        logger.info(response1)
+        response1 = support_groq(response1)
         # if len(text_out.strip()) == 0:
         #     logger.error(f'We have a problem with {str(response1)}')
         # response1 = text_out
@@ -123,7 +128,8 @@ def do_stream_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Gro
     Returns:
         tuple[Stream, int]: A tuple containing the generated response stream and the number of prompt tokens.
     """
-    user_prompt = make_user_prompt(query1, keep_texts=keep_texts)
+    is_oai = True if isinstance(gen_client, OpenAI) else False
+    user_prompt = make_user_prompt(query1, keep_texts=keep_texts, is_oai=is_oai)
     messages1, prompt_tokens = set_messages(SYSTEM_PROMPT, user_prompt)
     response = do_1_query_stream(messages1, gen_client)
 

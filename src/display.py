@@ -121,9 +121,7 @@ def make_app(n_results: int) -> None:
             )
             st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
         else:
-            st.markdown("Rate limits may be applied to this app do to its use of [Groq](https://groq.com/)")
-
-        st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
+            st.markdown("Rate limits may be applied to this app due to its use of [Groq](https://groq.com/)")
 
     st.title("Chat With a Decade of Previous NYR Talks")
 
