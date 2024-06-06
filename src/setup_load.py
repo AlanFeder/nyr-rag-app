@@ -52,7 +52,7 @@ def load_groq_model() -> Groq:
     return groq_client
 
 
-def load_api_clients(use_oai: bool = True, openai_api_key: str = None) -> tuple[OpenAI, OpenAI]:
+def load_api_clients(use_oai: bool = True, openai_api_key: str = None) -> tuple[OpenAI, OpenAI | Groq]:
     """
     Load API clients.
 

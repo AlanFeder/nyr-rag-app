@@ -116,11 +116,12 @@ def make_app(n_results: int) -> None:
         if use_oai:
             openai_api_key = st.text_input(
                 label="Input your OpenAI API Key (don't worry, this isn't stored anywhere)",
-                type='password',
-                value=openai_api_key
+                type='password'
             )
             st.markdown('''If you don't have an OpenAI API key, you can sign up [here](https://platform.openai.com/account/api-keys).''')
         else:
+            load_dotenv()
+            openai_api_key = os.getenv("OPENAI_API_KEY")
             st.markdown("Rate limits may be applied to this app due to its use of [Groq](https://groq.com/)")
 
     st.title("Chat With a Decade of Previous NYR Talks")
