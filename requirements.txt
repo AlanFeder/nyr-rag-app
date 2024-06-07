@@ -41,7 +41,7 @@ python-dotenv==1.0.1
 pytz==2024.1
 referencing==0.35.1
 regex==2024.5.10
-requests==2.31.0
+requests==2.32.3
 rich==13.7.1
 rpds-py==0.18.1
 six==1.16.0
@@ -52,7 +52,7 @@ tenacity==8.3.0
 tiktoken==0.7.0
 toml==0.10.2
 toolz==0.12.1
-tornado==6.4
+tornado==6.4.1
 tqdm==4.66.4
 typing_extensions==4.11.0
 tzdata==2024.1
