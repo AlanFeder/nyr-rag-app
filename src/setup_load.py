@@ -1,6 +1,8 @@
 import logging
 import streamlit as st
+import socket
 from pyprojroot import here
+from pathlib import Path
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
@@ -76,7 +78,11 @@ def import_data() -> tuple[pd.DataFrame, dict, dict]:
     Returns:
         tuple[pd.DataFrame, dict, dict]: A tuple containing the talks dataframe, transcript dictionaries, and full embeddings.
     """
-    fp_data = here() / 'data'
+    hostname = socket.gethostname()
+    if hostname[:4] == 'srv-':
+        fp_data = Path('/') / 'var' / 'data'
+    else:
+        fp_data = here() / 'data'
     df_talks = pd.read_parquet(fp_data / 'talks_on_youtube.parquet')
     with open(fp_data / 'transcripts.pkl', 'rb') as f1:
         transcript_dicts = pickle.load(f1)
