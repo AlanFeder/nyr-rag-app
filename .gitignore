@@ -165,7 +165,7 @@ cython_debug/
 
 old_stuff/
 
-# **/data/**/*.*
+**/data/**/*.*
 !.gitkeep
 
 # VisualStudioCode.gitignore
