@@ -5,9 +5,11 @@ from .retrieval import do_retrieval
 from .generation import do_generation
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
-# from dotenv import load_dotenv
+from langsmith import Client as lang_Client
+# from langchain_core.tracers.context import collect_runs
+from dotenv import load_dotenv
 from streamlit_feedback import streamlit_feedback
-# import os
+import os
 
 logger = logging.getLogger()
 
@@ -21,11 +23,9 @@ def display_generation(text_response: Any) -> int:
     Returns:
         int: The number of completion tokens.
     """
-    if isinstance(text_response, str):
-        st.write(text_response)
-        text_out = text_response
-    else:
-        text_out = st.write_stream(text_response)
+
+    text_out = st.write_stream(text_response)
+    st.session_state['response_out'] = text_out
     logger.info("Printing completed")
     completion_tokens = calc_n_tokens(text_out)
     return completion_tokens
@@ -91,45 +91,39 @@ def display_footer() -> None:
     st.markdown('[Email](mailto:AlanFeder@gmail.com) | [Website](https://www.alanfeder.com/) | [LinkedIn](https://www.linkedin.com/in/alanfeder/) | [GitHub](https://github.com/AlanFeder)')
     logger.info("footer displayed")
 
-# def display_feedback():
-#     feedback = streamlit_feedback(
-#         feedback_type=feedback_option,
-#         optional_text_label="[Optional] Please provide an explanation",
-#         key=f"feedback_{run_id}",
-#     )
+def display_feedback():
+    logger.info("feedback form created")
+    lang_client = lang_Client()
+    all_runs = lang_client.list_runs(project_name=os.getenv("LANGCHAIN_PROJECT"))
+    recent_run = list(all_runs)[0]
+    recent_run_id = recent_run.id
+    feedback = streamlit_feedback(
+        feedback_type='thumbs',
+        optional_text_label="[Optional] Please provide an explanation",
+        align='flex-start',
+        key=f"feedback_{recent_run_id}",
+    )
+    scores = {"👍": 1, "👎": 0}
 
-#     # Define score mappings for both "thumbs" and "faces" feedback systems
-#     score_mappings = {
-#         "thumbs": {"👍": 1, "👎": 0},
-#         "faces": {"😀": 1, "🙂": 0.75, "😐": 0.5, "🙁": 0.25, "😞": 0},
-#     }
+    if feedback:
+        logger.info(f"Feedback pressed {feedback}")
+        # Get the score from the selected feedback option's score mapping
+        score = scores.get(feedback["score"])
 
-#     # Get the score mapping based on the selected feedback option
-#     scores = score_mappings[feedback_option]
+        if score is not None:
+            # Formulate feedback type string incorporating the feedback option and score value
+            feedback_type_str = feedback['score']
+            # Record the feedback with the formulated feedback type stringand optional comment
+            feedback_record = lang_client.create_feedback(
+                recent_run_id,
+                feedback_type_str,
+                score=score,
+                comment=feedback.get("text"),
+            )
 
-#     if feedback:
-#         # Get the score from the selected feedback option's score mapping
-#         score = scores.get(feedback["score"])
-
-#         if score is not None:
-#             # Formulate feedback type string incorporating the feedback option
-#             # and score value
-#             feedback_type_str = f"{feedback_option} {feedback['score']}"
-
-#             # Record the feedback with the formulated feedback type string
-#             # and optional comment
-#             feedback_record = client.create_feedback(
-#                 run_id,
-#                 feedback_type_str,
-#                 score=score,
-#                 comment=feedback.get("text"),
-#             )
-#             st.session_state.feedback = {
-#                 "feedback_id": str(feedback_record.id),
-#                 "score": score,
-#             }
-#         else:
-#             st.warning("Invalid feedback score.")
+            logger.info("feedback recorded")
+        else:
+            st.warning("Invalid feedback score.")
 
 
 def make_app(n_results: int) -> None:
@@ -149,18 +143,19 @@ def make_app(n_results: int) -> None:
         initial_sidebar_state="auto",
         menu_items=None
     )
-
     # use_oai = model_choice == 'ChatGPT'
     # load_dotenv()
     # openai_api_key = os.getenv("OPENAI_API_KEY")
+    # st.write(collect_runs())
     with st.sidebar: 
         use_oai = st.radio(
             label = "Do you want to generate with GPT (More accurate) or Open-source Llama3 (free)?",
             # options = ['ChatGPT', 'Llama3'],
             options = [True, False],
-            format_func=lambda x: 'ChatGPT' if x else 'Llama3',
+            format_func=lambda x: 'ChatGPT' if x else 'Llama3-8b',
             index=0)
         if use_oai:
+            # openai_api_key=None
             openai_api_key = st.text_input(
                 label="Input your OpenAI API Key (don't worry, this isn't stored anywhere)",
                 type='password'
@@ -174,7 +169,7 @@ def make_app(n_results: int) -> None:
 
     st.title("Chat With a Decade of Previous NYR Talks")
 
-    st.markdown("What question do you want to ask of previous speakers?")
+
 
     placeholder1 = 'e.g. What is the tidyverse?'
     chat_container = st.container()
@@ -184,20 +179,49 @@ def make_app(n_results: int) -> None:
     with footer_container:
         display_footer()
 
-    with chat_container:
-        if prompt1 := st.chat_input(placeholder=placeholder1, key='input1'):
-            with st.chat_message("user"):
-                st.markdown(prompt1)
-            ret_client, gen_client = load_api_clients(use_oai=use_oai, openai_api_key=openai_api_key)
-            keep_texts = do_retrieval(query0=prompt1, n_results=n_results, api_client=ret_client)
-            with videos_container:
-                display_context(keep_texts)
-            stream_response, prompt_tokens = do_generation(prompt1, keep_texts, gen_client)
-            with st.chat_message("assistant"):
-                completion_tokens = display_generation(stream_response)
+
+    if openai_api_key or not use_oai:
+        st.markdown("What question do you want to ask of previous speakers?")
+
+        with chat_container:
+            # with collect_runs() as cb:
+            if prompt1 := st.chat_input(placeholder=placeholder1, key='input1'):
+                st.session_state['prompt'] = prompt1
+                # del st.session_state['keep_texts']
+                # del st.session_state['response_out']
+                ret_client, gen_client = load_api_clients(use_oai=use_oai, openai_api_key=openai_api_key)
+                keep_texts = do_retrieval(query0=prompt1, n_results=n_results, api_client=ret_client)
+                st.session_state['keep_texts'] = keep_texts
+                stream_response, prompt_tokens = do_generation(prompt1, keep_texts, gen_client)
+            if 'prompt' in st.session_state:
+                with st.chat_message("user"):
+                    st.markdown(st.session_state['prompt'])
+                    # st.markdown(prompt1)
+
+            if 'keep_texts' in st.session_state:
+                with videos_container:
+                    display_context(st.session_state['keep_texts'])
+
+            if prompt1: 
+                with st.chat_message("assistant"):
+                    completion_tokens = display_generation(stream_response)
                 embedding_tokens = calc_n_tokens(prompt1)
                 if not use_oai:
                     completion_tokens = prompt_tokens = 0
                 cost_cents = calc_cost(prompt_tokens, completion_tokens, embedding_tokens)
+                st.session_state['cost_cents'] = cost_cents
                 display_cost(cost_cents)
+            if (not prompt1) and ('response_out' in st.session_state):
+                with st.chat_message('assistant'):
+                    st.write(st.session_state['response_out'])
+            if (not prompt1) and ('cost_cents' in st.session_state):
+                display_cost(st.session_state['cost_cents'])
+
+            if 'response_out' in st.session_state:
+                # submit_feedback()
+                display_feedback()
+    else:
+        with chat_container:
+            st.warning("Please either put in an OpenAI API Key (and then press enter) or just use Llama3-8b, which isn't quite as good but is good enough.")
+
     logger.info("You're done!")

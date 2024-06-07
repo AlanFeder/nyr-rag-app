@@ -12,7 +12,7 @@ from langsmith.wrappers import wrap_openai
 logger = logging.getLogger()
 
 @st.cache_resource(ttl=14400)
-def load_oai_model(api_key: str = None) -> OpenAI:
+def load_oai_model(api_key: str = None, use_oai: bool = True) -> OpenAI:
     """
     Load OpenAI API client.
 
@@ -20,7 +20,7 @@ def load_oai_model(api_key: str = None) -> OpenAI:
         OpenAI: The OpenAI API client.
     """
     # Load API key from environment variable
-    if not api_key: 
+    if (not api_key) & (not use_oai): 
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY")
     # Create OpenAI API client
@@ -60,10 +60,10 @@ def load_api_clients(use_oai: bool = True, openai_api_key: str = None) -> tuple[
         tuple[OpenAI, OpenAI ]: A tuple containing the retrieval client and generation client.
     """
     if use_oai:
-        openai_client = load_oai_model(api_key=openai_api_key)
+        openai_client = load_oai_model(api_key=openai_api_key, use_oai=True)
         ret_client = gen_client = openai_client
     else:
-        ret_client = load_oai_model(api_key=openai_api_key)
+        ret_client = load_oai_model(api_key=openai_api_key, use_oai=False)
         gen_client = load_groq_model()
 
     return ret_client, gen_client
