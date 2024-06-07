@@ -4,8 +4,9 @@ from .retrieval import do_retrieval
 from .generation import do_generation
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
-from dotenv import load_dotenv
-import os
+# from dotenv import load_dotenv
+from streamlit_feedback import streamlit_feedback
+# import os
 
 logger = logging.getLogger()
 
@@ -84,6 +85,47 @@ def display_footer() -> None:
     st.image('AJF_Headshot.jpg', width=60)
     st.markdown('[Email](mailto:AlanFeder@gmail.com) | [Website](https://www.alanfeder.com/) | [LinkedIn](https://www.linkedin.com/in/alanfeder/) | [GitHub](https://github.com/AlanFeder)')
     logger.info("footer displayed")
+
+# def display_feedback():
+#     feedback = streamlit_feedback(
+#         feedback_type=feedback_option,
+#         optional_text_label="[Optional] Please provide an explanation",
+#         key=f"feedback_{run_id}",
+#     )
+
+#     # Define score mappings for both "thumbs" and "faces" feedback systems
+#     score_mappings = {
+#         "thumbs": {"👍": 1, "👎": 0},
+#         "faces": {"😀": 1, "🙂": 0.75, "😐": 0.5, "🙁": 0.25, "😞": 0},
+#     }
+
+#     # Get the score mapping based on the selected feedback option
+#     scores = score_mappings[feedback_option]
+
+#     if feedback:
+#         # Get the score from the selected feedback option's score mapping
+#         score = scores.get(feedback["score"])
+
+#         if score is not None:
+#             # Formulate feedback type string incorporating the feedback option
+#             # and score value
+#             feedback_type_str = f"{feedback_option} {feedback['score']}"
+
+#             # Record the feedback with the formulated feedback type string
+#             # and optional comment
+#             feedback_record = client.create_feedback(
+#                 run_id,
+#                 feedback_type_str,
+#                 score=score,
+#                 comment=feedback.get("text"),
+#             )
+#             st.session_state.feedback = {
+#                 "feedback_id": str(feedback_record.id),
+#                 "score": score,
+#             }
+#         else:
+#             st.warning("Invalid feedback score.")
+
 
 def make_app(n_results: int) -> None:
     """
