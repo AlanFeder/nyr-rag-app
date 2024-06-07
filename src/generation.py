@@ -1,6 +1,8 @@
 import logging
-from typing import Any
+from typing import Any, Generator
 from .setup_load import OpenAI, Groq
+from groq import Stream as groq_Stream
+from openai import Stream as oai_Stream
 from .utils import calc_n_tokens
 from langsmith import traceable
 
@@ -75,8 +77,12 @@ Address the response to me directly.  Do not use any information not explicitly 
     # logger.info(f'User prompt: {user_prompt}')
     return user_prompt
 
-@traceable
-def do_1_query(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> str: 
+
+def concatenate_strings(outputs: list):
+    return "".join(outputs)
+
+@traceable(reduce_fn=concatenate_strings)
+def do_1_query(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> oai_Stream | groq_Stream: 
     """
     Generate a response using the specified chat completion model.
 
@@ -95,25 +101,36 @@ def do_1_query(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> st
         logger.error("There is some problem with the generator client")
         raise Exception("There is some problem with the generator client")
 
-    to_stream = True if isinstance(gen_client, OpenAI) else False
-
     # Generate the response using the specified model
     response1 = gen_client.chat.completions.create(
         messages=messages1,
         model=model1,
         seed=18,
         temperature=0,
-        stream=to_stream
+        stream=True
     )
 
     if isinstance(gen_client, Groq):
-        response1 = text_from_response(response1)
+        response1 = support_groq(response1)
 
     return response1
 
-def text_from_response(response1) -> str:
-    return response1.choices[0].message.content
 
+
+def support_groq(groq_stream: groq_Stream) -> Generator[str, None, None]:
+    """
+    Convert a Groq stream into a generator of strings.
+    This function takes a Groq stream as input and yields each chunk of the stream
+    as a string. It is used to support streaming responses from the Groq API.
+    Args:
+        groq_stream (groq_Stream): The Groq stream to convert.
+    Yields:
+        str: Each chunk of the Groq stream as a string.
+    """
+    for chunk in groq_stream:
+        text0 = chunk.choices[0].delta.content
+        text0 = '' if text0 is None else text0
+        yield text0
 
 def do_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq) -> tuple[Any, int]:
     """
