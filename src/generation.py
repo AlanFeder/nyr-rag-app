@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from .setup_load import OpenAI, Groq
 from .utils import calc_n_tokens
 from langsmith import traceable
@@ -94,24 +95,27 @@ def do_1_query(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> st
         logger.error("There is some problem with the generator client")
         raise Exception("There is some problem with the generator client")
 
+    to_stream = True if isinstance(gen_client, OpenAI) else False
+
     # Generate the response using the specified model
     response1 = gen_client.chat.completions.create(
         messages=messages1,
         model=model1,
         seed=18,
         temperature=0,
-        stream=False
+        stream=to_stream
     )
 
-    text1 = text_from_response(response1)
+    if isinstance(gen_client, Groq):
+        response1 = text_from_response(response1)
 
-    return text1
+    return response1
 
 def text_from_response(response1) -> str:
     return response1.choices[0].message.content
 
 
-def do_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq) -> tuple[str, int]:
+def do_generation(query1: str, keep_texts: dict, gen_client: OpenAI | Groq) -> tuple[Any, int]:
     """
     Generate the chatbot response using the specified generation client.
 

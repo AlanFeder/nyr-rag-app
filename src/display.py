@@ -1,4 +1,5 @@
 import streamlit as st
+from typing import Any
 import logging
 from .retrieval import do_retrieval
 from .generation import do_generation
@@ -10,7 +11,7 @@ from streamlit_feedback import streamlit_feedback
 
 logger = logging.getLogger()
 
-def display_generation(text_response: str) -> int:
+def display_generation(text_response: Any) -> int:
     """
     Display the chatbot response.
 
@@ -20,7 +21,11 @@ def display_generation(text_response: str) -> int:
     Returns:
         int: The number of completion tokens.
     """
-    text_out = st.write(text_response)
+    if isinstance(text_response, str):
+        st.write(text_response)
+        text_out = text_response
+    else:
+        text_out = st.write_stream(text_response)
     logger.info("Printing completed")
     completion_tokens = calc_n_tokens(text_out)
     return completion_tokens
