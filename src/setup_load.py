@@ -10,6 +10,8 @@ import pickle
 from langsmith.wrappers import wrap_openai
 import boto3
 import io
+from botocore import UNSIGNED
+from botocore.client import Config
 
 logger = logging.getLogger()
 
@@ -72,7 +74,7 @@ def load_api_clients(use_oai: bool = True, openai_api_key: str = None) -> tuple[
 
 @st.cache_resource(ttl=14400)
 def initialize_boto3():
-    return boto3.client('s3')
+    return boto3.client('s3', config=Config(signature_version=UNSIGNED))
 
 
 # Read pickle files
