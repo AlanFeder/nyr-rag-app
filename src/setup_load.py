@@ -1,8 +1,6 @@
 import logging
 import streamlit as st
-import socket
-from pyprojroot import here
-from pathlib import Path
+from typing import Any
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
@@ -10,6 +8,8 @@ from groq import Groq
 import pandas as pd
 import pickle
 from langsmith.wrappers import wrap_openai
+import boto3
+import io
 
 logger = logging.getLogger()
 
@@ -70,6 +70,16 @@ def load_api_clients(use_oai: bool = True, openai_api_key: str = None) -> tuple[
 
     return ret_client, gen_client
 
+@st.cache_resource(ttl=14400)
+def initialize_boto3():
+    return boto3.client('s3')
+
+
+# Read pickle files
+def read_pickle_from_s3(s3, bucket_name: str, key: str) -> Any:
+    obj = s3.get_object(Bucket=bucket_name, Key=key)
+    return pickle.loads(obj['Body'].read())
+
 @st.cache_data(ttl=14400)
 def import_data() -> tuple[pd.DataFrame, dict, dict]:
     """
@@ -78,19 +88,22 @@ def import_data() -> tuple[pd.DataFrame, dict, dict]:
     Returns:
         tuple[pd.DataFrame, dict, dict]: A tuple containing the talks dataframe, transcript dictionaries, and full embeddings.
     """
-    hostname = socket.gethostname()
-    if hostname[:4] == 'srv-':
-        fp_data = Path('/') / 'var' / 'data'
-    else:
-        fp_data = here() / 'data'
-    df_talks = pd.read_parquet(fp_data / 'talks_on_youtube.parquet')
-    with open(fp_data / 'transcripts.pkl', 'rb') as f1:
-        transcript_dicts = pickle.load(f1)
-    with open(fp_data / 'transcripts_40seconds.pkl', 'rb') as f1:
-        transcripts_40seconds = pickle.load(f1) 
-    with open(fp_data / 'full_embeds.pkl', 'rb') as f2:
-        full_embeds = pickle.load(f2)
+ 
+    s3 = initialize_boto3()
+    bucket_name = "nyr-rag-app"
 
-    logger.info('Loaded files')
+    try:
+        # Read parquet file
+        obj = s3.get_object(Bucket=bucket_name, Key='talks_on_youtube.parquet')
+        df_talks = pd.read_parquet(io.BytesIO(obj['Body'].read()))
 
-    return df_talks, transcript_dicts, transcripts_40seconds, full_embeds
+        transcript_dicts = read_pickle_from_s3(s3, bucket_name, 'transcripts.pkl')
+        transcripts_40seconds = read_pickle_from_s3(s3, bucket_name, 'transcripts_40seconds.pkl')
+        full_embeds = read_pickle_from_s3(s3, bucket_name, 'full_embeds.pkl')
+
+        logger.info('Loaded files')
+
+        return df_talks, transcript_dicts, transcripts_40seconds, full_embeds
+    except Exception as e:
+        logger.error(f"Error loading data from S3: {str(e)}")
+        raise
