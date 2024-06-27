@@ -1,13 +1,40 @@
 import streamlit as st
 from typing import Any
 import logging
-from .retrieval import do_retrieval
 from .generation import do_generation
 from .setup_load import load_api_clients
 from .utils import calc_cost, calc_n_tokens
-import os
+import requests
 
 logger = logging.getLogger()
+
+
+def call_retrieval_api(query0: str, n_results: int) -> dict[str, dict]:
+    """
+    Call the retrieval API to get relevant documents.
+
+    Args:
+        query (str): The user's query.
+        n_results (int): The number of documents to retrieve.
+        use_oai (bool): Whether to use OpenAI or not.
+        openai_api_key (str, optional): The OpenAI API key.
+
+    Returns:
+        dict[str, dict]: The retrieved documents.
+    """
+    # api_url = "http://localhost:8000/retrieve"  # Update this URL if needed
+    api_url = 'https://alanfeder--nyr-rag-app-fastapi-app.modal.run/retrieve'
+    payload = {
+        "query": query0,
+        "n_results": n_results
+    }
+    try:
+        response = requests.post(api_url, json=payload)
+        response.raise_for_status()
+        return response.json()["keep_texts"]
+    except requests.RequestException as e:
+        logger.error(f"Error calling retrieval API: {str(e)}")
+        raise
 
 def display_generation(text_response: Any) -> int:
     """
@@ -139,8 +166,8 @@ def make_app(n_results: int) -> None:
         with chat_container:
             if prompt1 := st.chat_input(placeholder=placeholder1, key='input1'):
                 st.session_state['prompt'] = prompt1
-                ret_client, gen_client = load_api_clients(use_oai=use_oai, openai_api_key=openai_api_key)
-                keep_texts = do_retrieval(query0=prompt1, n_results=n_results, api_client=ret_client)
+                gen_client = load_api_clients(use_oai=use_oai, openai_api_key=openai_api_key)
+                keep_texts = call_retrieval_api(query0=prompt1, n_results=n_results)
                 st.session_state['keep_texts'] = keep_texts
                 stream_response, prompt_tokens = do_generation(prompt1, keep_texts, gen_client)
 

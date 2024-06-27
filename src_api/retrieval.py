@@ -2,11 +2,10 @@ import logging
 from itertools import chain
 import numpy as np
 import pandas as pd
-
 from .utils import dict_to_list_and_array, split_into_consecutive
 from .setup_load import import_data, OpenAI
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 def do_sort(embed_dict: dict[str, np.ndarray], arr_q: np.ndarray) -> pd.DataFrame:
     """
