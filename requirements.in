@@ -6,7 +6,7 @@ numpy>=1.26.4,<2
 openai>=1.109.1,<2
 pandas>=2.2.3,<3
 python-dotenv>=1.2.2,<2
-streamlit>=1.55.0,<1.56
+streamlit>=1.66.0,<1.67
 tiktoken>=0.12.0,<1
 
 # Security floors for dependencies used by the SDKs and Streamlit.
