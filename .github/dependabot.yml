@@ -1,17 +1,44 @@
+# Routine updates: one monthly minor/patch group per ecosystem and directory.
+# The allow update-types filter does not apply to security updates.
 version: 2
 updates:
-  - package-ecosystem: pip
-    directory: /
-    schedule:
-      interval: weekly
-    groups:
-      python-version-updates:
-        applies-to: version-updates
-        patterns: ['*']
-      python-security-updates:
-        applies-to: security-updates
-        patterns: ['*']
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
+- package-ecosystem: pip
+  directory: /
+  schedule:
+    interval: monthly
+  groups:
+    routine-updates:
+      applies-to: version-updates
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+    python-security-updates:
+      applies-to: security-updates
+      patterns:
+      - '*'
+  open-pull-requests-limit: 1
+  allow:
+  - dependency-name: '*'
+    update-types:
+    - version-update:semver-minor
+    - version-update:semver-patch
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: monthly
+  open-pull-requests-limit: 1
+  allow:
+  - dependency-name: '*'
+    update-types:
+    - version-update:semver-minor
+    - version-update:semver-patch
+  groups:
+    routine-updates:
+      applies-to: version-updates
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
