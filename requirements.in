@@ -19,5 +19,5 @@ protobuf>=5.29.6
 # PyArrow 26 requires NumPy 2 at runtime; keep compatibility with saved data.
 pyarrow>=23.0.1,<24
 requests>=2.33.0
-tornado>=6.5.9
+tornado>=6.6.1
 urllib3>=2.8.0
