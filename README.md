@@ -18,13 +18,13 @@ LangSmith tracing continues to use the standard LangSmith environment settings.
 ## Dependency maintenance
 
 `requirements.in` lists the packages used by the app plus security minimums;
-`requirements.txt` pins their complete resolved dependency graph. NumPy stays on
-1.26 and pandas on 2.x to preserve compatibility with existing serialized data.
-PyArrow stays on its patched 23.x line because PyArrow 26 requires NumPy 2 at
-runtime. To regenerate with [uv](https://docs.astral.sh/uv/):
+`requirements.txt` pins their complete resolved dependency graph. The app uses
+NumPy 2, pandas 3, PyArrow 26, and OpenAI SDK 3. The universal lock selects
+NumPy 2.4 on Python 3.11 and newer NumPy releases on Python 3.12+. Tests cover
+serialized data, SDK requests, and app startup. To regenerate with [uv](https://docs.astral.sh/uv/):
 
 ```sh
-uv pip compile requirements.in --python-version 3.11 --universal --upgrade --no-annotate --output-file requirements.txt
+uv pip compile requirements.in --python-version 3.11.5 --universal --upgrade --no-annotate --output-file requirements.txt
 pip install -r requirements.txt
 python -m pip check
 LANGSMITH_TRACING=false python -P -m unittest discover -s tests -v

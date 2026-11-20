@@ -18,6 +18,16 @@ from src import generation, retrieval, setup_load
 
 
 class CompatibilityTests(unittest.TestCase):
+    def test_legacy_serialized_data_loads_after_the_major_upgrades(self):
+        fixtures = ROOT / "tests" / "fixtures"
+        with (fixtures / "numpy1-pandas2.pkl").open("rb") as source:
+            legacy = pickle.load(source)
+        np.testing.assert_array_equal([1.0, 0.0], legacy["embedding"])
+        self.assertEqual(["Legacy speaker"], legacy["talks"]["Speaker"].tolist())
+        restored = pd.read_parquet(fixtures / "pyarrow23.parquet", use_threads=False)
+        self.assertEqual(["talk"], restored["id0"].tolist())
+        self.assertEqual(["Legacy speaker"], restored["Speaker"].tolist())
+
     def test_app_starts_without_cloud_credentials(self):
         app = AppTest.from_file(str(ROOT / "app.py")).run(timeout=30)
         self.assertEqual([], [error.message for error in app.exception])
