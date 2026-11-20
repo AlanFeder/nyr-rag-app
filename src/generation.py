@@ -79,7 +79,15 @@ Address the response to me directly.  Do not use any information not explicitly 
 
 
 def concatenate_strings(outputs: list):
-    return "".join(outputs)
+    parts = []
+    for output in outputs:
+        if isinstance(output, str):
+            parts.append(output)
+        elif output.choices:
+            content = output.choices[0].delta.content
+            if content:
+                parts.append(content)
+    return "".join(parts)
 
 @traceable(reduce_fn=concatenate_strings)
 def do_1_query(messages1: list[dict[str, str]], gen_client: OpenAI | Groq) -> oai_Stream | groq_Stream: 
